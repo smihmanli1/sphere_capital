@@ -1,7 +1,7 @@
 
-from limit_order import LimitOrder, Side, Operation
-from algo_limit_order import AlgoLimitOrder
-from pipe import Pipe
+from framework.limit_order import LimitOrder, Side, Operation
+from framework.algo_limit_order import AlgoLimitOrder
+from framework.pipe import Pipe
 
 class OrderSubmitter(Pipe):
 	def __init__(self):

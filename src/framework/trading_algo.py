@@ -1,5 +1,5 @@
 
-from pipe import Pipe
+from framework.pipe import Pipe
 
 
 

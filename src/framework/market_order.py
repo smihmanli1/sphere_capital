@@ -1,4 +1,4 @@
-from limit_order import Side
+from framework.limit_order import Side
 
 class MarketOrder:
 	@staticmethod

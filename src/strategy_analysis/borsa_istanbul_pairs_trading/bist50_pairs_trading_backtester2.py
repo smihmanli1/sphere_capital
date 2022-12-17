@@ -111,12 +111,8 @@ def runBist50PairsTrading(limitOrderFilesDir, date, params):
     mdReader = BistOrderReader(limitOrderFileName, limitOrderBook)
     tradingAlgo = BistPairsTradingStrategy(limitOrderBook, params)
     backtesterPipeline = Pipeline([mdReader,[limitOrderBook,tradingAlgo]])
+    backtesterPipeline.start()
     
-    try:
-        backtesterPipeline.start()
-    except:
-        pass
-
     return tradingAlgo.getPricesDataFrame(), tradingAlgo.getPercentChangesDataFrame()
 
 
@@ -181,10 +177,10 @@ timeseries = ["BIST30","BIST50"] + allEtfs
 dailyPriceCorrelations = getCorrelations(pricesDataFrame, timeseries)
 
 print ("Correlations: ")
-for index in indexEtfSet:
-    if index in dailyPriceCorrelations:
-        print (index)
-        correlationsList = list(dailyPriceCorrelations[index].items())
+for series in timeseries:
+    if series in dailyPriceCorrelations:
+        print (series)
+        correlationsList = list(dailyPriceCorrelations[series].items())
         correlationsList.sort(key=lambda x: x[1])
         print (f"{correlationsList}\n\n\n")
 
