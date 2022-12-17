@@ -46,6 +46,9 @@ class L3LimitOrderMultiBook(Pipe):
         if limitOrder.symbol is None:
             print (f"Symbol cannot be None: {limitOrder}")
             raise ("Exception symbol cannot be None")
+        
+        if limitOrder.symbol == "THYAO.E":
+            print (f"Event getting inserted to book: {limitOrder}")
         self.limitOrderBooks[limitOrder.symbol].accept(limitOrder)
     
     ######################

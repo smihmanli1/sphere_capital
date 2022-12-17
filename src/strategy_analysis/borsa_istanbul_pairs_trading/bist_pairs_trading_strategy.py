@@ -81,11 +81,17 @@ class BistPairsTradingStrategy(TradingAlgo):
         if currentTime > self.parameters["exchange_close_time"]:
             return
 
-        # if currentTime > datetime.time(10,15,0):
-        #     raise Exception()
+        if currentTime > datetime.time(10,15,0):
+            raise Exception()
 
         if not self.lob.validBook(event.symbol):
             return
+
+        if event.symbol == "THYAO.E":
+            if not self.lob.hasBid(event.symbol):
+                print (f"Event arrived to bist strategy: {event}")
+                print (f"Event time: {currentTime}")
+                print ("THYAO.E does not have any bid")
 
         if not self.lob.hasBid(event.symbol) or not self.lob.hasAsk(event.symbol):
             return
