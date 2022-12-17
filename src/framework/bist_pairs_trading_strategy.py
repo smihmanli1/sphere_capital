@@ -18,8 +18,7 @@ MILLIS_IN_A_SEC = 1000
 class BistPairsTradingStrategy(TradingAlgo):
 
     #Find type for 'parameters' and 'tickerPairs' in bist50_pairs_trading_backtester
-    def __init__(self, backtestOrderSubmitter, lob, parameters):
-        self.backtestOrderSubmitter = backtestOrderSubmitter
+    def __init__(self, lob, parameters):
         self.lob = lob
         self.eventCount = 0
         self.parameters = parameters
@@ -86,11 +85,12 @@ class BistPairsTradingStrategy(TradingAlgo):
         if currentTime < self.parameters["exchange_open_time"]:
             return
 
-        if currentTime > self.parameters["exchange_close_time"]:
-            return
+        #TODO: Undo this
+        # if currentTime > self.parameters["exchange_close_time"]:
+        #     return
 
-        # if currentTime > datetime.time(10,15,0):
-        #     raise Exception()
+        if currentTime > datetime.time(10,15,0):
+            raise Exception()
 
         if not self.lob.validBook(event.symbol):
             return
