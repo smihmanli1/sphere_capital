@@ -77,13 +77,12 @@ class BistPairsTradingStrategy(TradingAlgo):
         currentTime = eventTime.time()
         if currentTime < self.parameters["exchange_open_time"]:
             return
+        
+        if currentTime > self.parameters["exchange_close_time"]:
+            return
 
-        #TODO: Undo this
-        # if currentTime > self.parameters["exchange_close_time"]:
-        #     return
-
-        if currentTime > datetime.time(10,15,0):
-            raise Exception()
+        # if currentTime > datetime.time(10,15,0):
+        #     raise Exception()
 
         if not self.lob.validBook(event.symbol):
             return

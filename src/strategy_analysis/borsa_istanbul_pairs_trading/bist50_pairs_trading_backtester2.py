@@ -105,22 +105,13 @@ def getLimitOrderFileName(dateInDatetime):
 
 
 def runBist50PairsTrading(limitOrderFilesDir, date, params):
-    
     limitOrderFileName = os.path.join(limitOrderFilesDir,getLimitOrderFileName(date))
     print (f"Running algo for limit order file: {limitOrderFileName}")
-
     limitOrderBook = L3LimitOrderMultiBook()
     mdReader = BistOrderReader(limitOrderFileName, limitOrderBook)
-    
     tradingAlgo = BistPairsTradingStrategy(limitOrderBook, params)
-
     backtesterPipeline = Pipeline([mdReader,[limitOrderBook,tradingAlgo]])
-             
-    #TODO: Remove this try/catch                                       
-    try:
-        backtesterPipeline.start()
-    except:
-        pass
+    backtesterPipeline.start()
 
     return tradingAlgo.getPricesDataFrame(), tradingAlgo.getPercentChangesDataFrame()
 
