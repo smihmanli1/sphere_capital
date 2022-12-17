@@ -10,7 +10,7 @@ import datetime
 from collections import defaultdict
 import pandas as pd
 
-from framework.bist_order_reader import BistOrderReader
+from borsa_istanbul_handlers.bist_order_reader import BistOrderReader
 from framework.l3_limit_order_book import L3LimitOrderMultiBook
 from framework.pipeline import Pipeline
 

@@ -30,8 +30,9 @@ import mmap
 import datetime
 import operator
 from collections import defaultdict
-from pipe import Pipe
-from limit_order import *
+
+from framework.pipe import Pipe
+from framework.limit_order import *
 
 
 bist50Syms = set(
