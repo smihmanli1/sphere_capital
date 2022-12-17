@@ -2,16 +2,8 @@
 from pipe import Pipe
 from trading_algo import TradingAlgo
 from collections import defaultdict
-from limit_order import Side
 import datetime
-from market_order import MarketOrder
-import math
-import matplotlib.pyplot as plt
-from matplotlib.dates import date2num, DateFormatter
-import datetime as dt
 import pandas as pd
-from matplotlib.backends.backend_pdf import PdfPages
-from math import ceil
 
 MILLIS_IN_A_SEC = 1000
 
