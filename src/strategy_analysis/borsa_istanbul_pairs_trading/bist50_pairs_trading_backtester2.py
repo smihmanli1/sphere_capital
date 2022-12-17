@@ -9,6 +9,7 @@ import os
 import datetime
 from collections import defaultdict
 import pandas as pd
+import json
 
 from borsa_istanbul_handlers.bist_order_reader import BistOrderReader
 from framework.l3_limit_order_book import L3LimitOrderMultiBook
@@ -111,7 +112,10 @@ def runBist50PairsTrading(limitOrderFilesDir, date, params):
     mdReader = BistOrderReader(limitOrderFileName, limitOrderBook)
     tradingAlgo = BistPairsTradingStrategy(limitOrderBook, params)
     backtesterPipeline = Pipeline([mdReader,[limitOrderBook,tradingAlgo]])
+    
+    
     backtesterPipeline.start()
+    
     
     return tradingAlgo.getPricesDataFrame(), tradingAlgo.getPercentChangesDataFrame()
 
@@ -157,7 +161,8 @@ if len(sys.argv) < 3:
 
 
 limitOrderFilesDir = sys.argv[1]
-runDate = datetime.datetime.strptime(sys.argv[2], '%Y-%m-%d')
+runDateString = sys.argv[2]
+runDate = datetime.datetime.strptime(runDateString, '%Y-%m-%d')
 
 parameters = {}
 parameters["exchange_open_time"] = datetime.time(10,0,0)
@@ -176,13 +181,16 @@ print (allPricesDataframe)
 timeseries = ["BIST30","BIST50"] + allEtfs
 dailyPriceCorrelations = getCorrelations(pricesDataFrame, timeseries)
 
-print ("Correlations: ")
-for series in timeseries:
-    if series in dailyPriceCorrelations:
-        print (series)
-        correlationsList = list(dailyPriceCorrelations[series].items())
-        correlationsList.sort(key=lambda x: x[1])
-        print (f"{correlationsList}\n\n\n")
+with open(f"{runDateString}_correlations.json", "w+") as outfile:
+    json.dump(dailyPriceCorrelations, outfile)
+
+# print ("Correlations: ")
+# for series in timeseries:
+#     if series in dailyPriceCorrelations:
+#         print (series)
+#         correlationsList = list(dailyPriceCorrelations[series].items())
+#         correlationsList.sort(key=lambda x: x[1])
+#         print (f"{correlationsList}\n\n\n")
 
 
 
