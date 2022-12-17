@@ -1,8 +1,8 @@
 import unittest
-from backtest_order_submitter import BacktestOrderSubmitter
-from l3_limit_order_book import L3LimitOrderBook
-from limit_order import LimitOrder, Side, Operation
-from trading_algo import TradingAlgo
+from ..backtest_order_submitter import BacktestOrderSubmitter
+from ..l3_limit_order_book import L3LimitOrderBook
+from ..limit_order import LimitOrder, Side, Operation
+from ..trading_algo import TradingAlgo
 
 class TestTradingAlgo(TradingAlgo):
 
