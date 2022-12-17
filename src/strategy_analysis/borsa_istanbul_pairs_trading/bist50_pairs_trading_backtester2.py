@@ -111,7 +111,11 @@ def runBist50PairsTrading(limitOrderFilesDir, date, params):
     mdReader = BistOrderReader(limitOrderFileName, limitOrderBook)
     tradingAlgo = BistPairsTradingStrategy(limitOrderBook, params)
     backtesterPipeline = Pipeline([mdReader,[limitOrderBook,tradingAlgo]])
-    backtesterPipeline.start()
+    
+    try:
+        backtesterPipeline.start()
+    except:
+        pass
 
     return tradingAlgo.getPricesDataFrame(), tradingAlgo.getPercentChangesDataFrame()
 
@@ -142,12 +146,12 @@ def addBist30Column(tickers, pricesDf):
     return pricesDf
 
 
-def getCorrelations(pricesDataFrame, stocks, allEtfs):
+def getCorrelations(pricesDataFrame, priceTimeseries):
     result = defaultdict(dict)
-    for stock in stocks:
-        for etf in allEtfs:
-            if stock in pricesDataFrame and etf in pricesDataFrame:
-                result[stock][etf] = pricesDataFrame[stock].corr(pricesDataFrame[etf])
+    for timeseries1 in priceTimeseries:
+        for timeseries2 in priceTimeseries:
+            if timeseries1 in pricesDataFrame and timeseries2 in pricesDataFrame:
+                result[timeseries1][timeseries2] = pricesDataFrame[timeseries1].corr(pricesDataFrame[timeseries2])
 
     return result    
 
@@ -173,8 +177,8 @@ print ("Prices: ")
 print (allPricesDataframe)
 
 
-indexEtfSet = ["BIST30","BIST50"] + allEtfs
-dailyPriceCorrelations = getCorrelations(pricesDataFrame, indexEtfSet, allEtfs)
+timeseries = ["BIST30","BIST50"] + allEtfs
+dailyPriceCorrelations = getCorrelations(pricesDataFrame, timeseries)
 
 print ("Correlations: ")
 for index in indexEtfSet:
