@@ -184,6 +184,9 @@ dailyPriceCorrelations = getCorrelations(pricesDataFrame, timeseries)
 with open(f"{runDateString}_correlations.json", "w+") as outfile:
     json.dump(dailyPriceCorrelations, outfile)
 
+dataFrameCsvFile = f"{runDateString}_minutely_prices.csv"
+pricesDataFrame.to_csv(dataFrameCsvFile)
+
 # print ("Correlations: ")
 # for series in timeseries:
 #     if series in dailyPriceCorrelations:
