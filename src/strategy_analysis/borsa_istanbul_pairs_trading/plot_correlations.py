@@ -28,26 +28,33 @@ def consolidateCorrelations(correlationsDir):
 
 allCorrelations = consolidateCorrelations(sys.argv[1])
 
-
 # Create a figure with two subplots
-numColumns = 2
-fig = ps.make_subplots(rows=math.ceil(math.pow(len(allCorrelations),2)/numColumns), cols=numColumns)
-count = 0
+newHists = []
+addedCorrelations = set()
 for ticker1 in allCorrelations:
-    if count == 2:
-        break
     for ticker2 in allCorrelations[ticker1]:
-        # print (allCorrelations[ticker1][ticker2]) 
-        # print (count)
-        newHist = go.Histogram(x=allCorrelations[ticker1][ticker2])
-        print (allCorrelations[ticker1][ticker2])
-        print (f"Row: {int(count/numColumns)+1}")
-        print (f"Col: {(count % numColumns)+1}")
-        fig.add_trace(newHist, row=int(count/numColumns)+1, col=(count % numColumns)+1)
-        count += 1
-        if count == 2:
-            break
+        #Do not add the histogram for the same correlation twice
+        if (ticker2,ticker1) in addedCorrelations:
+            continue
+        newHist = go.Histogram(x=allCorrelations[ticker1][ticker2],nbinsx=20)
+        newHists.append(newHist)
+        addedCorrelations.add((ticker1,ticker2))
         
+        
+numColumns = 5
+fig = ps.make_subplots(rows=math.ceil(len(newHists)/numColumns), cols=numColumns)
+
+count = 0
+for newHist in newHists:
+    fig.add_trace(newHist, row=int(count/numColumns)+1, col=(count % numColumns)+1)
+    count += 1
+
+
+fig.update_layout(title='title',
+    autosize=True,
+    height=4000,
+)
+
 fig.show()
 
 
