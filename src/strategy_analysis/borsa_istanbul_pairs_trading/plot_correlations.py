@@ -36,7 +36,8 @@ for ticker1 in allCorrelations:
         #Do not add the histogram for the same correlation twice
         if (ticker2,ticker1) in addedCorrelations:
             continue
-        newHist = go.Histogram(x=allCorrelations[ticker1][ticker2],nbinsx=20)
+        allTexts = f"{ticker1}_{ticker2}"
+        newHist = go.Histogram(x=allCorrelations[ticker1][ticker2],nbinsx=20, name=allTexts, text=allTexts, textposition='auto')
         newHists.append(newHist)
         addedCorrelations.add((ticker1,ticker2))
         
