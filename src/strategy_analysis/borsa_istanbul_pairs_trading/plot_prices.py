@@ -41,15 +41,23 @@ def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2):
         currentDateString = currentDate.strftime('%Y-%m-%d')
         currentDatePricesFile = f"{pricesDir}/{currentDateString}_minutely_prices.csv"
         try:
+
             pricesDf = pd.read_csv(currentDatePricesFile)
+            pricesDf["time"] = pd.to_datetime(pricesDf["time"])
+
+            #TODO: Add start time, end time for each day as function params
+            mask = (pricesDf["time"].dt.hour > 10) & (pricesDf["time"].dt.hour < 17)
+
+            pricesDf = pricesDf.loc[mask]    
             pricesDf = addColumn(index1, pricesDf)
             pricesDf = addColumn(index2, pricesDf)
             
-            
             priceChangeDiff = pricesDf[f"{index1.name}_change"] - pricesDf[f"{index2.name}_change"]
+            pricesDf["price_change_diff"] = priceChangeDiff
 
-            # priceChangeDiff = [min(i,0.1) for i in priceChangeDiff]
-            # priceChangeDiff = [max(i,-0.1) for i in priceChangeDiff]
+
+            priceChangeDiff = [min(i,0.5) for i in priceChangeDiff]
+            priceChangeDiff = [max(i,-0.5) for i in priceChangeDiff]
 
             newLineChart = go.Scatter(x=pricesDf["time"] , y=priceChangeDiff, name=f"{currentDateString}")
             returnedLineCharts.append(newLineChart)
