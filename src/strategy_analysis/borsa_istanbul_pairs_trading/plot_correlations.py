@@ -25,6 +25,12 @@ def consolidateCorrelations(correlationsDir):
 
     return allCorrelations
 
+def getNumDays(correlationsDir):
+    wildcard = f"{correlationsDir}/*_correlations.json"
+    allCorrelationFiles = glob.glob(wildcard)
+    return len(allCorrelationFiles)
+
+
 
 allCorrelations = consolidateCorrelations(sys.argv[1])
 
@@ -51,7 +57,7 @@ for newHist in newHists:
     count += 1
 
 
-fig.update_layout(title='title',
+fig.update_layout(title=f'2021 Price Correlations -- {getNumDays(sys.argv[1])}',
     autosize=True,
     height=4000,
 )
