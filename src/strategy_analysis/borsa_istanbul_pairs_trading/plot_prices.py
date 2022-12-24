@@ -29,7 +29,7 @@ def addColumn(index, pricesDf):
     #Calculate index price change
     priceChangeColumnName = f"{index.name}_change"
     startOfDayPrice = pricesDf[index.name].iat[pricesDf[index.name].first_valid_index()]
-    pricesDf[priceChangeColumnName] = (pricesDf[index.name] - startOfDayPrice)/startOfDayPrice
+    pricesDf[priceChangeColumnName] = 100 * (pricesDf[index.name] - startOfDayPrice)/startOfDayPrice
 
     return pricesDf
 
@@ -45,7 +45,12 @@ def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2):
             pricesDf = addColumn(index1, pricesDf)
             pricesDf = addColumn(index2, pricesDf)
             
+            
             priceChangeDiff = pricesDf[f"{index1.name}_change"] - pricesDf[f"{index2.name}_change"]
+
+            # priceChangeDiff = [min(i,0.1) for i in priceChangeDiff]
+            # priceChangeDiff = [max(i,-0.1) for i in priceChangeDiff]
+
             newLineChart = go.Scatter(x=pricesDf["time"] , y=priceChangeDiff, name=f"{currentDateString}")
             returnedLineCharts.append(newLineChart)
             
