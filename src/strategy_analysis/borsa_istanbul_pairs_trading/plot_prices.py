@@ -45,11 +45,13 @@ def calculateReturn(pricesDf, index1Name, index2Name):
         priceChangeDiff = abs(row["price_change_diff"])
         
         #If price change diff is nan ignore it
+        #TODO: If we solve the NaN issue in getAllPriceCharts, we shouldn't have to check
+        #for this. We should then assert and fail.
         if math.isnan(priceChangeDiff):
             continue
 
         lastPriceChangeDiff = priceChangeDiff
-        if priceChangeDiff >= 0.2:
+        if priceChangeDiff >= 0.1:
             bought = True
             boughtPrice = priceChangeDiff
 
@@ -75,7 +77,8 @@ def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStar
             pricesDf = pd.read_csv(currentDatePricesFile)
             pricesDf["time"] = pd.to_datetime(pricesDf["time"])
 
-            #TODO: Add start time, end time for each day as function params
+            #TODO: Get more precise with these time bounds
+            #TODO: Why the fuck do we get rows with NaNs here
             mask = (pricesDf["time"].dt.hour > tradingStartHour) & (pricesDf["time"].dt.hour < tradingEndHour)
 
             pricesDf = pricesDf.loc[mask]
@@ -111,8 +114,14 @@ endDateString = sys.argv[3]
 startDate = datetime.datetime.strptime(startDateString, '%Y-%m-%d')
 endDate = datetime.datetime.strptime(endDateString, '%Y-%m-%d')
 
-index1 = Index("ZPX30.F", {"ZPX30.F" : 1})
-index2 = Index("ZTM15.F", {"ZTM15.F" : 1})
+index1 = Index("BIST30", {"BIST30" : 1})
+index2 = Index("DJIST.F", {"DJIST.F" : 1})
+
+# ZPX30.F vs ZRE20.F
+# ZPX30.F vs BIST30.F
+# ZPX30.F vs ZTM15.F
+# ZPX30.F vs Z30EA.F
+# BIST30 vs DJIST.F
 
 allLineCharts = getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, 10, 17, 0.5)
 
