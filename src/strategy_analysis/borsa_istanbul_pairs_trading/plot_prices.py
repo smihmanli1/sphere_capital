@@ -33,7 +33,7 @@ def addColumn(index, pricesDf):
 
     return pricesDf
 
-def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2):
+def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStartHour, tradingEndHour, plotPriceThreshold):
 
     currentDate = startDate
     returnedLineCharts = []
@@ -46,7 +46,7 @@ def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2):
             pricesDf["time"] = pd.to_datetime(pricesDf["time"])
 
             #TODO: Add start time, end time for each day as function params
-            mask = (pricesDf["time"].dt.hour > 10) & (pricesDf["time"].dt.hour < 17)
+            mask = (pricesDf["time"].dt.hour > tradingStartHour) & (pricesDf["time"].dt.hour < tradingEndHour)
 
             pricesDf = pricesDf.loc[mask]    
             pricesDf = addColumn(index1, pricesDf)
@@ -55,9 +55,10 @@ def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2):
             priceChangeDiff = pricesDf[f"{index1.name}_change"] - pricesDf[f"{index2.name}_change"]
             pricesDf["price_change_diff"] = priceChangeDiff
 
+            
 
-            priceChangeDiff = [min(i,0.5) for i in priceChangeDiff]
-            priceChangeDiff = [max(i,-0.5) for i in priceChangeDiff]
+            priceChangeDiff = [min(i,plotPriceThreshold) for i in priceChangeDiff]
+            priceChangeDiff = [max(i,-plotPriceThreshold) for i in priceChangeDiff]
 
             newLineChart = go.Scatter(x=pricesDf["time"] , y=priceChangeDiff, name=f"{currentDateString}")
             returnedLineCharts.append(newLineChart)
@@ -77,12 +78,10 @@ endDateString = sys.argv[3]
 startDate = datetime.datetime.strptime(startDateString, '%Y-%m-%d')
 endDate = datetime.datetime.strptime(endDateString, '%Y-%m-%d')
 
-index1 = Index("DJIST.F", {"DJIST.F" : 1})
-index2 = Index("Z30EA.F", {"Z30EA.F" : 1})
+index1 = Index("ZPX30.F", {"ZPX30.F" : 1})
+index2 = Index("ZTM15.F", {"ZTM15.F" : 1})
 
-allLineCharts = getAllPriceCharts(pricesDir, startDate, endDate, index1, index2)
-# allLineCharts = allLineCharts[:4]
-
+allLineCharts = getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, 10, 17, 0.5)
 
 numColumns = 5
 fig = ps.make_subplots(rows=math.ceil(len(allLineCharts)/numColumns), cols=numColumns)
