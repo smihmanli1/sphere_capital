@@ -33,10 +33,40 @@ def addColumn(index, pricesDf):
 
     return pricesDf
 
+def calculateReturn(pricesDf, index1Name, index2Name):
+
+    numberOfMinutes = len(pricesDf[index1Name])
+    totalReturn = 1
+    bought = False
+    boughtPrice = 0
+    lastPriceChangeDiff = 0
+    
+    for index,row in pricesDf.iterrows():
+        priceChangeDiff = abs(row["price_change_diff"])
+        
+        #If price change diff is nan ignore it
+        if math.isnan(priceChangeDiff):
+            continue
+
+        lastPriceChangeDiff = priceChangeDiff
+        if priceChangeDiff >= 0.2:
+            bought = True
+            boughtPrice = priceChangeDiff
+
+        if bought and priceChangeDiff <= 0.01:
+            totalReturn *= 1 + (boughtPrice - priceChangeDiff)/100
+            bought = False
+
+    if bought:
+        totalReturn *= 1 + (boughtPrice - lastPriceChangeDiff)/100
+
+    return totalReturn
+
 def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStartHour, tradingEndHour, plotPriceThreshold):
 
     currentDate = startDate
     returnedLineCharts = []
+    totalReturn = 1
     while currentDate != endDate:
         currentDateString = currentDate.strftime('%Y-%m-%d')
         currentDatePricesFile = f"{pricesDir}/{currentDateString}_minutely_prices.csv"
@@ -48,14 +78,14 @@ def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStar
             #TODO: Add start time, end time for each day as function params
             mask = (pricesDf["time"].dt.hour > tradingStartHour) & (pricesDf["time"].dt.hour < tradingEndHour)
 
-            pricesDf = pricesDf.loc[mask]    
+            pricesDf = pricesDf.loc[mask]
             pricesDf = addColumn(index1, pricesDf)
             pricesDf = addColumn(index2, pricesDf)
             
             priceChangeDiff = pricesDf[f"{index1.name}_change"] - pricesDf[f"{index2.name}_change"]
             pricesDf["price_change_diff"] = priceChangeDiff
 
-            
+            totalReturn *= calculateReturn(pricesDf, index1.name, index2.name)
 
             priceChangeDiff = [min(i,plotPriceThreshold) for i in priceChangeDiff]
             priceChangeDiff = [max(i,-plotPriceThreshold) for i in priceChangeDiff]
@@ -67,6 +97,9 @@ def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStar
             pass
 
         currentDate += datetime.timedelta(days=1)
+
+
+    print (f"Total return for pair {index1.name} - {index2.name}: {totalReturn}")
 
     return returnedLineCharts
 
