@@ -114,31 +114,37 @@ endDateString = sys.argv[3]
 startDate = datetime.datetime.strptime(startDateString, '%Y-%m-%d')
 endDate = datetime.datetime.strptime(endDateString, '%Y-%m-%d')
 
-index1 = Index("BIST30", {"BIST30" : 1})
-index2 = Index("DJIST.F", {"DJIST.F" : 1})
 
-# ZPX30.F vs ZRE20.F
-# ZPX30.F vs BIST30.F
-# ZPX30.F vs ZTM15.F
-# ZPX30.F vs Z30EA.F
-# BIST30 vs DJIST.F
+worthwhileIndices = [('ZPX30.F','ZTM15.F'),
+                    ('ZPX30.F','ZRE20.F'),
+                    ('ZPX30.F','DJIST.F'),
+                    ('ZPX30.F','Z30EA.F'),
+                    ('ZRE20.F','Z30EA.F'),
+                    ('BIST30','DJIST.F'),
+                    ('BIST30','ZPX30.F'),
+                    ('BIST30','Z30EA.F'),
+                    ('DJIST.F','Z30EA.F')]
 
-allLineCharts = getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, 10, 17, 0.5)
+for index1Name, index2Name in worthwhileIndices:
+    index1 = Index(index1Name, {index1Name : 1})
+    index2 = Index(index2Name, {index2Name : 1})
 
-numColumns = 5
-fig = ps.make_subplots(rows=math.ceil(len(allLineCharts)/numColumns), cols=numColumns)
+    allLineCharts = getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, 10, 17, 0.5)
 
-count = 0
-for lineChart in allLineCharts:
-    fig.add_trace(lineChart, row=int(count/numColumns)+1, col=(count % numColumns)+1)
-    count += 1
+    numColumns = 5
+    fig = ps.make_subplots(rows=math.ceil(len(allLineCharts)/numColumns), cols=numColumns)
+
+    count = 0
+    for lineChart in allLineCharts:
+        fig.add_trace(lineChart, row=int(count/numColumns)+1, col=(count % numColumns)+1)
+        count += 1
 
 
-fig.update_layout(title=f'Price Diffs {index1.name} - {index2.name}',
-    autosize=True,
-    height=4000,
-)
+    fig.update_layout(title=f'Price Diffs {index1.name} - {index2.name}',
+        autosize=True,
+        height=4000,
+    )
 
-fig.show()
+    fig.show()
 
 
