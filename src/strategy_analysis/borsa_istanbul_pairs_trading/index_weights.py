@@ -2,6 +2,14 @@
 import pandas as pd
 import numpy as np
 
+def getUnitWeightForTicker(tickerName):
+    weights = pd.DataFrame({
+        "Name" : [tickerName],
+        "01/01/01" : [1]
+        })
+
+    return weights
+
 
 def getWeights(indexName, weightsDir):
     weightsCsvFile = f"{weightsDir}/{indexName}.csv"

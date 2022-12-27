@@ -8,7 +8,7 @@ import plotly.subplots as ps
 import math
 import plotly.express as px 
 
-from index_weights import getWeights
+from index_weights import getWeights, getUnitWeightForTicker
 
 class Index:
 
@@ -150,12 +150,27 @@ worthwhileIndices = [('ZPX30.F','ZTM15.F'),
                     ('ZPX30.F','DJIST.F'),
                     ('ZPX30.F','Z30EA.F'),
                     ('ZRE20.F','Z30EA.F'),
-                    ('DJIST.F','Z30EA.F')]
+                    ('DJIST.F','Z30EA.F'),
+                    ('BIST30', 'DJIST.F'),
+                    ('BIST30', 'ZPX30.F'),
+                    ('BIST30', 'Z30EA.F')]
+
+
 
 
 for index1Name, index2Name in worthwhileIndices:
-    index1 = Index(index1Name, getWeights(index1Name, weightsDir))#These weights should be time based
+    
+    #Use this to use only stocks' mids when calculating alpha
+    if index1Name == "BIST30":
+        index1 = Index(index1Name, getUnitWeightForTicker(index1Name))
+    else:
+        index1 = Index(index1Name, getWeights(index1Name, weightsDir))
+    
     index2 = Index(index2Name, getWeights(index2Name, weightsDir))
+
+    #Use this to use ETF prices for everythin except BIST30 when calculating alphs
+    # index1 = Index(index1Name, getUnitWeightForTicker(index1Name))
+    # index2 = Index(index2Name, getUnitWeightForTicker(index2Name))
 
     allLineCharts = getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, 10, 17, 0.5)
 
