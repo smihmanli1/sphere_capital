@@ -21,6 +21,7 @@ class Index:
         weightsDataFrameDatesFormat = '%m/%d/%y'
         
         relevantWeightsDistribution = None
+        returnedWeightsDate = None
 
         #Find the distribution as of the given date
         for col in self.weightsDf:
@@ -28,17 +29,14 @@ class Index:
                 continue
             colParsedToDate = datetime.datetime.strptime(col, weightsDataFrameDatesFormat).date()
             if colParsedToDate < distributionDate:
+                returnedWeightsDate = col
                 relevantWeightsDistribution = self.weightsDf[["Name",col]]
 
-
-        print(relevantWeightsDistribution)
-        exit()
-
-
-        return self.distribution
+        returned = dict(zip(relevantWeightsDistribution['Name'],relevantWeightsDistribution[returnedWeightsDate]))
+        return returned
 
 
-
+missingData = set()
 def addColumn(index, pricesDf):
     
     #Calculate index price
@@ -46,7 +44,15 @@ def addColumn(index, pricesDf):
     indexDistribution = index.getDistribution(pricesDate)
     newColumn = pd.Series([0 for i in range(len(pricesDf.index))])
     for ticker,weight in indexDistribution.items():
-        newColumn += newColumn + weight * pricesDf[ticker]
+        
+        #TODO: We didn't capture all prices for all the securities in the distributions.
+        #This is because BIST50 equities change overtime and we only capture BIST50 equities of now.
+        if ticker in pricesDf:
+            newColumn += newColumn + weight * pricesDf[ticker]
+        else:
+            if (ticker,index.name) not in missingData:
+                print (f"Ticker {ticker} is missing for {index.name}")
+                missingData.add((ticker,index.name))
 
     pricesDf[index.name] = newColumn
 
@@ -144,9 +150,6 @@ worthwhileIndices = [('ZPX30.F','ZTM15.F'),
                     ('ZPX30.F','DJIST.F'),
                     ('ZPX30.F','Z30EA.F'),
                     ('ZRE20.F','Z30EA.F'),
-                    ('BIST30','DJIST.F'),
-                    ('BIST30','ZPX30.F'),
-                    ('BIST30','Z30EA.F'),
                     ('DJIST.F','Z30EA.F')]
 
 
