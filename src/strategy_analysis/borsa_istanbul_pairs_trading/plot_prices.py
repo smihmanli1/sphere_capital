@@ -8,6 +8,8 @@ import plotly.subplots as ps
 import math
 import plotly.express as px 
 
+from index_weights import getWeights
+
 class Index:
 
     def __init__(self, name, distribution):
@@ -15,11 +17,15 @@ class Index:
         self.name = name
         self.distribution = distribution
 
+    def getDistribution(self, distributionDate):
+        return self.distribution
+
+
 
 def addColumn(index, pricesDf):
     
     #Calculate index price
-    indexDistribution = index.distribution
+    indexDistribution = index.getDistribution(pricesDf["time"])
     newColumn = pd.Series([0 for i in range(len(pricesDf.index))])
     for ticker,weight in indexDistribution.items():
         newColumn += newColumn + weight * pricesDf[ticker]
@@ -114,7 +120,7 @@ endDateString = sys.argv[3]
 startDate = datetime.datetime.strptime(startDateString, '%Y-%m-%d')
 endDate = datetime.datetime.strptime(endDateString, '%Y-%m-%d')
 
-
+weightsDir = f"{pricesDir}/etf_position_distributions/"
 worthwhileIndices = [('ZPX30.F','ZTM15.F'),
                     ('ZPX30.F','ZRE20.F'),
                     ('ZPX30.F','DJIST.F'),
@@ -125,9 +131,10 @@ worthwhileIndices = [('ZPX30.F','ZTM15.F'),
                     ('BIST30','Z30EA.F'),
                     ('DJIST.F','Z30EA.F')]
 
+
 for index1Name, index2Name in worthwhileIndices:
-    index1 = Index(index1Name, {index1Name : 1})
-    index2 = Index(index2Name, {index2Name : 1})
+    index1 = Index(index1Name, getWeights(index1Name, weightsDir))#These weights should be time based
+    index2 = Index(index2Name, getWeights(index2Name, weightsDir))
 
     allLineCharts = getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, 10, 17, 0.5)
 
