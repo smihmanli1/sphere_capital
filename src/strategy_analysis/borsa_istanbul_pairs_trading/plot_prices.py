@@ -12,12 +12,29 @@ from index_weights import getWeights
 
 class Index:
 
-    def __init__(self, name, distribution):
+    def __init__(self, name, weightsDf):
 
         self.name = name
-        self.distribution = distribution
+        self.weightsDf = weightsDf
 
     def getDistribution(self, distributionDate):
+        weightsDataFrameDatesFormat = '%m/%d/%y'
+        
+        relevantWeightsDistribution = None
+
+        #Find the distribution as of the given date
+        for col in self.weightsDf:
+            if col == "Name":
+                continue
+            colParsedToDate = datetime.datetime.strptime(col, weightsDataFrameDatesFormat).date()
+            if colParsedToDate < distributionDate:
+                relevantWeightsDistribution = self.weightsDf[["Name",col]]
+
+
+        print(relevantWeightsDistribution)
+        exit()
+
+
         return self.distribution
 
 
@@ -25,7 +42,8 @@ class Index:
 def addColumn(index, pricesDf):
     
     #Calculate index price
-    indexDistribution = index.getDistribution(pricesDf["time"])
+    pricesDate = pricesDf["time"].iat[0].date()
+    indexDistribution = index.getDistribution(pricesDate)
     newColumn = pd.Series([0 for i in range(len(pricesDf.index))])
     for ticker,weight in indexDistribution.items():
         newColumn += newColumn + weight * pricesDf[ticker]
