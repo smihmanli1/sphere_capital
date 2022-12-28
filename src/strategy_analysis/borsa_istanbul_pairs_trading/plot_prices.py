@@ -149,15 +149,17 @@ endDate = datetime.datetime.strptime(endDateString, '%Y-%m-%d')
 weightsDir = f"{pricesDir}/etf_position_distributions/"
 # worthwhileIndices = [('ZRE20.F','Z30EA.F')]
 
-worthwhileIndices = [('ZPX30.F','ZTM15.F'),
+worthwhileIndices = [
+                    ('ZPX30.F','ZTM15.F'),
                     ('ZPX30.F','ZRE20.F'),
                     ('ZPX30.F','DJIST.F'),
                     ('ZPX30.F','Z30EA.F'),
                     ('ZRE20.F','Z30EA.F'),
                     ('DJIST.F','Z30EA.F'),
-                    ('BIST30', 'DJIST.F'),
-                    ('BIST30', 'ZPX30.F'),
-                    ('BIST30', 'Z30EA.F')]
+                    ('BIST30_one_each', 'DJIST.F'),
+                    ('BIST30_one_each', 'ZPX30.F'),
+                    ('BIST30_one_each', 'Z30EA.F')
+                    ]
 
 
 
