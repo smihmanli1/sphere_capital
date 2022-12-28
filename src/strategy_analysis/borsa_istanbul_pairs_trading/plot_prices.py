@@ -82,11 +82,11 @@ def calculateReturn(pricesDf, index1Name, index2Name):
             continue
 
         lastPriceChangeDiff = priceChangeDiff
-        if priceChangeDiff >= 0.1:
+        if priceChangeDiff >= 0.5:
             bought = True
             boughtPrice = priceChangeDiff
 
-        if bought and priceChangeDiff <= 0.01:
+        if bought and priceChangeDiff <= 0.1:
             totalReturn *= 1 + (boughtPrice - priceChangeDiff)/100
             bought = False
 
@@ -150,12 +150,12 @@ weightsDir = f"{pricesDir}/etf_position_distributions/"
 # worthwhileIndices = [('ZRE20.F','Z30EA.F')]
 
 worthwhileIndices = [
-                    ('ZPX30.F','ZTM15.F'),
-                    ('ZPX30.F','ZRE20.F'),
-                    ('ZPX30.F','DJIST.F'),
-                    ('ZPX30.F','Z30EA.F'),
-                    ('ZRE20.F','Z30EA.F'),
-                    ('DJIST.F','Z30EA.F'),
+                    # ('ZPX30.F','ZTM15.F'),
+                    # ('ZPX30.F','ZRE20.F'),
+                    # ('ZPX30.F','DJIST.F'),
+                    # ('ZPX30.F','Z30EA.F'),
+                    # ('ZRE20.F','Z30EA.F'),
+                    # ('DJIST.F','Z30EA.F'),
                     ('BIST30_one_each', 'DJIST.F'),
                     ('BIST30_one_each', 'ZPX30.F'),
                     ('BIST30_one_each', 'Z30EA.F')
@@ -165,12 +165,8 @@ worthwhileIndices = [
 
 for index1Name, index2Name in worthwhileIndices:
     
-    #Use this to use only stocks' mids when calculating alpha
-    if index1Name == "BIST30":
-        index1 = Index(index1Name, getUnitWeightForTicker(index1Name))
-    else:
-        index1 = Index(index1Name, getWeights(index1Name, weightsDir))
-    
+    #Use this to use only stocks' mids when calculating alpha        
+    index1 = Index(index1Name, getWeights(index1Name, weightsDir))
     index2 = Index(index2Name, getWeights(index2Name, weightsDir))
 
     #Use this to use ETF prices for everythin except BIST30 when calculating alphs
