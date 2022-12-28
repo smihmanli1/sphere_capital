@@ -59,6 +59,7 @@ def addColumn(index, pricesDf):
     #Calculate index price change
     priceChangeColumnName = f"{index.name}_change"
     startOfDayPrice = pricesDf[index.name].iat[pricesDf[index.name].first_valid_index()]
+
     pricesDf[priceChangeColumnName] = 100 * (pricesDf[index.name] - startOfDayPrice)/startOfDayPrice
 
     return pricesDf
@@ -107,14 +108,15 @@ def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStar
             pricesDf = pd.read_csv(currentDatePricesFile)
             pricesDf["time"] = pd.to_datetime(pricesDf["time"])
 
-            #TODO: Get more precise with these time bounds
-            #TODO: Why the fuck do we get rows with NaNs here
             mask = (pricesDf["time"].dt.hour > tradingStartHour) & (pricesDf["time"].dt.hour < tradingEndHour)
 
             pricesDf = pricesDf.loc[mask]
+            pricesDf.reset_index(inplace=True)
+    
             pricesDf = addColumn(index1, pricesDf)
             pricesDf = addColumn(index2, pricesDf)
             
+
             priceChangeDiff = pricesDf[f"{index1.name}_change"] - pricesDf[f"{index2.name}_change"]
             pricesDf["price_change_diff"] = priceChangeDiff
 
@@ -145,6 +147,8 @@ startDate = datetime.datetime.strptime(startDateString, '%Y-%m-%d')
 endDate = datetime.datetime.strptime(endDateString, '%Y-%m-%d')
 
 weightsDir = f"{pricesDir}/etf_position_distributions/"
+# worthwhileIndices = [('ZRE20.F','Z30EA.F')]
+
 worthwhileIndices = [('ZPX30.F','ZTM15.F'),
                     ('ZPX30.F','ZRE20.F'),
                     ('ZPX30.F','DJIST.F'),
@@ -154,7 +158,6 @@ worthwhileIndices = [('ZPX30.F','ZTM15.F'),
                     ('BIST30', 'DJIST.F'),
                     ('BIST30', 'ZPX30.F'),
                     ('BIST30', 'Z30EA.F')]
-
 
 
 
