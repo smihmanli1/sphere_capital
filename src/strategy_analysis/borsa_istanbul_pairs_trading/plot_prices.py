@@ -111,14 +111,14 @@ def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStar
             pricesDf = pd.read_csv(currentDatePricesFile)
             pricesDf["time"] = pd.to_datetime(pricesDf["time"])
 
-            mask = (pricesDf["time"].dt.hour > tradingStartHour) & (pricesDf["time"].dt.hour < tradingEndHour)
+            mask = (pricesDf["time"] >= f'{currentDateString} 10:15:00') & (pricesDf["time"] <= f'{currentDateString} 17:45:00')
 
             pricesDf = pricesDf.loc[mask]
             pricesDf.reset_index(inplace=True, drop=True)
-    
+
             pricesDf = addPriceChangeColumn(index1, pricesDf)
             pricesDf = addPriceChangeColumn(index2, pricesDf)
-            
+
             priceChangeDiff = pricesDf[f"{index1.name}_change"] - pricesDf[f"{index2.name}_change"]
             pricesDf["price_change_diff"] = priceChangeDiff
 
