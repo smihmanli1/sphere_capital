@@ -32,7 +32,7 @@ class BistPairsTradingStrategy(TradingAlgo):
         timeseries = []
         while currentTime <= endTime:
             timeseries.append(currentTime)
-            currentTime = currentTime + datetime.timedelta(minutes=1)
+            currentTime = currentTime + datetime.timedelta(seconds=15)
 
         timeseries = pd.DataFrame({'time' : timeseries})
         for ticker,prices in prices.items():
