@@ -113,47 +113,10 @@ def runBist50PairsTrading(limitOrderFilesDir, date, params):
     tradingAlgo = BistPairsTradingStrategy(limitOrderBook, params)
     backtesterPipeline = Pipeline([mdReader,[limitOrderBook,tradingAlgo]])
     
-    
     backtesterPipeline.start()
-    
     
     return tradingAlgo.getPricesDataFrame(), tradingAlgo.getPercentChangesDataFrame()
 
-
-def getTrajectory(tickers, df):
-
-    sums = []
-    returned = pd.DataFrame({"time" : df["time"]})
-    trajectoryName = "_".join(tickers)
-    for ticker in tickers:
-        if trajectoryName not in returned:
-            returned[trajectoryName] = df[ticker]
-        else:
-            returned[trajectoryName] += df[ticker]
-    
-    returned[trajectoryName] /= len(tickers)
-
-    return trajectoryName,returned
-
-def addBist50Column(tickers, pricesDf):
-    trajectoryName, df = getTrajectory(tickers, pricesDf)
-    pricesDf['BIST50'] = df[trajectoryName]
-    return pricesDf
-
-def addBist30Column(tickers, pricesDf):
-    trajectoryName, df = getTrajectory(tickers, pricesDf)
-    pricesDf['BIST30'] = df[trajectoryName]
-    return pricesDf
-
-
-def getCorrelations(pricesDataFrame, priceTimeseries):
-    result = defaultdict(dict)
-    for timeseries1 in priceTimeseries:
-        for timeseries2 in priceTimeseries:
-            if timeseries1 in pricesDataFrame and timeseries2 in pricesDataFrame:
-                result[timeseries1][timeseries2] = pricesDataFrame[timeseries1].corr(pricesDataFrame[timeseries2])
-
-    return result    
 
 if len(sys.argv) < 3:
     print ("Usage: bist50_pairs_trading_backtester.py <limitOrderFilesDir> <run date Y-m-d>")
@@ -171,31 +134,11 @@ parameters["exchange_close_time"] = datetime.time(18,0,0)
 print (f"Running strategy for day: {runDate}")    
 allPricesDataframe,allPriceChangesDataframe = runBist50PairsTrading(limitOrderFilesDir, runDate, parameters)
 
-pricesDataFrame = addBist30Column(bist30Tickers, allPricesDataframe)
-pricesDataFrame = addBist50Column(bist50Tickers, allPricesDataframe)
-
 print ("Prices: ")
 print (allPricesDataframe)
 
-
-timeseries = ["BIST30","BIST50"] + allEtfs
-dailyPriceCorrelations = getCorrelations(pricesDataFrame, timeseries)
-
-with open(f"{runDateString}_correlations.json", "w+") as outfile:
-    json.dump(dailyPriceCorrelations, outfile)
-
-dataFrameCsvFile = f"{runDateString}_minutely_prices.csv"
-pricesDataFrame.to_csv(dataFrameCsvFile)
-
-# print ("Correlations: ")
-# for series in timeseries:
-#     if series in dailyPriceCorrelations:
-#         print (series)
-#         correlationsList = list(dailyPriceCorrelations[series].items())
-#         correlationsList.sort(key=lambda x: x[1])
-#         print (f"{correlationsList}\n\n\n")
-
-
+dataFrameCsvFile = f"{runDateString}_interval_prices.csv"
+allPricesDataframe.to_csv(dataFrameCsvFile)
 
 
 
