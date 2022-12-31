@@ -37,7 +37,7 @@ class Index:
 
 
 missingData = set()
-def addColumn(index, pricesDf):
+def addPriceChangeColumn(index, pricesDf):
     
     #Calculate index price
     pricesDate = pricesDf["time"].iat[0].date()
@@ -79,6 +79,9 @@ def calculateReturn(pricesDf, index1Name, index2Name):
         #TODO: If we solve the NaN issue in getAllPriceCharts, we shouldn't have to check
         #for this. We should then assert and fail.
         if math.isnan(priceChangeDiff):
+            # print ("Price change diff is NaN")
+            # print (pricesDf[["time", index1Name,index2Name,f"{index1Name}_change", f"{index2Name}_change", "price_change_diff"]])
+            # exit()
             continue
 
         lastPriceChangeDiff = priceChangeDiff
@@ -111,12 +114,11 @@ def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStar
             mask = (pricesDf["time"].dt.hour > tradingStartHour) & (pricesDf["time"].dt.hour < tradingEndHour)
 
             pricesDf = pricesDf.loc[mask]
-            pricesDf.reset_index(inplace=True)
+            pricesDf.reset_index(inplace=True, drop=True)
     
-            pricesDf = addColumn(index1, pricesDf)
-            pricesDf = addColumn(index2, pricesDf)
+            pricesDf = addPriceChangeColumn(index1, pricesDf)
+            pricesDf = addPriceChangeColumn(index2, pricesDf)
             
-
             priceChangeDiff = pricesDf[f"{index1.name}_change"] - pricesDf[f"{index2.name}_change"]
             pricesDf["price_change_diff"] = priceChangeDiff
 
@@ -150,12 +152,12 @@ weightsDir = f"{pricesDir}/etf_position_distributions/"
 # worthwhileIndices = [('ZRE20.F','Z30EA.F')]
 
 worthwhileIndices = [
-                    # ('ZPX30.F','ZTM15.F'),
-                    # ('ZPX30.F','ZRE20.F'),
-                    # ('ZPX30.F','DJIST.F'),
-                    # ('ZPX30.F','Z30EA.F'),
-                    # ('ZRE20.F','Z30EA.F'),
-                    # ('DJIST.F','Z30EA.F'),
+                    ('ZPX30.F','ZTM15.F'),
+                    ('ZPX30.F','ZRE20.F'),
+                    ('ZPX30.F','DJIST.F'),
+                    ('ZPX30.F','Z30EA.F'),
+                    ('ZRE20.F','Z30EA.F'),
+                    ('DJIST.F','Z30EA.F'),
                     ('BIST30_one_each', 'DJIST.F'),
                     ('BIST30_one_each', 'ZPX30.F'),
                     ('BIST30_one_each', 'Z30EA.F')
@@ -189,6 +191,6 @@ for index1Name, index2Name in worthwhileIndices:
         height=4000,
     )
 
-    fig.show()
+    # fig.show()
 
 
