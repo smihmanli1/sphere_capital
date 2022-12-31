@@ -119,18 +119,24 @@ def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStar
             pricesDf = pd.read_csv(currentDatePricesFile)
             pricesDf["time"] = pd.to_datetime(pricesDf["time"])
 
-            #Filter out pricing early and late in the session
-            mask = (pricesDf["time"] >= f'{currentDateString} {tradingStartTimeString}') & (pricesDf["time"] <= f'{currentDateString} {tradingEndTimeString}')
-            pricesDf = pricesDf.loc[mask]
-            pricesDf.reset_index(inplace=True, drop=True)
-
             pricesDf = addIndexColumn(index1, pricesDf)
             pricesDf = addIndexColumn(index2, pricesDf)
 
             #Reduce the columns to only the relevant ones
             #Get rid of rows that have NaN price for either of the indices
             pricesDf = pricesDf[["time", index1.name, index2.name]]
+
             pricesDf = pricesDf.dropna()
+            pricesDf.reset_index(inplace=True, drop=True)
+
+            
+            #We want to backtest starting from 15 minutes after the first pricing started for this
+            #pair.
+            pricingStartDatetime = pricesDf["time"].iat[0]
+            backtestingStartTime = (pricingStartDatetime + datetime.timedelta(minutes=15)).time()
+            #Filter out pricing early and late in the session
+            mask = (pricesDf["time"] >= f'{currentDateString} {backtestingStartTime}') & (pricesDf["time"] <= f'{currentDateString} {tradingEndTimeString}')
+            pricesDf = pricesDf.loc[mask]
             pricesDf.reset_index(inplace=True, drop=True)
 
             pricesDf = addPriceChangeColumn(index1, pricesDf)
