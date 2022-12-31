@@ -79,17 +79,22 @@ def calculateReturn(pricesDf, index1Name, index2Name):
         #TODO: If we solve the NaN issue in getAllPriceCharts, we shouldn't have to check
         #for this. We should then assert and fail.
         if math.isnan(priceChangeDiff):
-            # print ("Price change diff is NaN")
-            # print (pricesDf[["time", index1Name,index2Name,f"{index1Name}_change", f"{index2Name}_change", "price_change_diff"]])
-            # exit()
-            continue
+            if not math.isnan(row[index1Name]) or not math.isnan(row[index2Name]):
+                print ("Price change diff is NaN but at least one of the prices is not NaN")
+                print (pricesDf[["time", index1Name,index2Name,f"{index1Name}_change", f"{index2Name}_change", "price_change_diff"]].to_string())
+                exit()
+            else:
+                continue
 
+        #Other thresholds tried:
+        # 0.5
+        # 0.1
         lastPriceChangeDiff = priceChangeDiff
-        if priceChangeDiff >= 0.5:
+        if priceChangeDiff >= 0.2:
             bought = True
             boughtPrice = priceChangeDiff
 
-        if bought and priceChangeDiff <= 0.1:
+        if bought and priceChangeDiff <= 0.01:
             totalReturn *= 1 + (boughtPrice - priceChangeDiff)/100
             bought = False
 
