@@ -37,7 +37,7 @@ class Index:
 
 
 missingData = set()
-def addPriceChangeColumn(index, pricesDf):
+def addIndexColumn(index, pricesDf):
     
     #Calculate index price
     pricesDate = pricesDf["time"].iat[0].date()
@@ -50,12 +50,18 @@ def addPriceChangeColumn(index, pricesDf):
         if ticker in pricesDf:
             newColumn += newColumn + weight * pricesDf[ticker]
         else:
+            #Log the missing ticker
             if (ticker,index.name) not in missingData:
                 print (f"Ticker {ticker} is missing for {index.name}")
                 missingData.add((ticker,index.name))
 
     pricesDf[index.name] = newColumn
 
+    return pricesDf
+
+    
+def addPriceChangeColumn(index, pricesDf):
+    
     #Calculate index price change
     priceChangeColumnName = f"{index.name}_change"
     startOfDayPrice = pricesDf[index.name].iat[pricesDf[index.name].first_valid_index()]
@@ -75,12 +81,9 @@ def calculateReturn(pricesDf, index1Name, index2Name):
     for index,row in pricesDf.iterrows():
         priceChangeDiff = abs(row["price_change_diff"])
         
-        #If price change diff is nan ignore it
-        #TODO: If we solve the NaN issue in getAllPriceCharts, we shouldn't have to check
-        #for this. We should then assert and fail.
         if math.isnan(priceChangeDiff):
             if not math.isnan(row[index1Name]) or not math.isnan(row[index2Name]):
-                print ("Price change diff is NaN but at least one of the prices is not NaN")
+                print ("CRITICAL -- Price change diff is NaN but at least one of the prices is not NaN")
                 print (pricesDf[["time", index1Name,index2Name,f"{index1Name}_change", f"{index2Name}_change", "price_change_diff"]].to_string())
                 exit()
             else:
@@ -90,11 +93,11 @@ def calculateReturn(pricesDf, index1Name, index2Name):
         # 0.5
         # 0.1
         lastPriceChangeDiff = priceChangeDiff
-        if priceChangeDiff >= 0.2:
+        if priceChangeDiff >= 0.5:
             bought = True
             boughtPrice = priceChangeDiff
 
-        if bought and priceChangeDiff <= 0.01:
+        if bought and priceChangeDiff <= 0.1:
             totalReturn *= 1 + (boughtPrice - priceChangeDiff)/100
             bought = False
 
@@ -103,7 +106,7 @@ def calculateReturn(pricesDf, index1Name, index2Name):
 
     return totalReturn
 
-def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStartHour, tradingEndHour, plotPriceThreshold):
+def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStartTimeString, tradingEndTimeString, plotPriceThreshold):
 
     currentDate = startDate
     returnedLineCharts = []
@@ -116,9 +119,18 @@ def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStar
             pricesDf = pd.read_csv(currentDatePricesFile)
             pricesDf["time"] = pd.to_datetime(pricesDf["time"])
 
-            mask = (pricesDf["time"] >= f'{currentDateString} 10:15:00') & (pricesDf["time"] <= f'{currentDateString} 17:45:00')
-
+            #Filter out pricing early and late in the session
+            mask = (pricesDf["time"] >= f'{currentDateString} {tradingStartTimeString}') & (pricesDf["time"] <= f'{currentDateString} {tradingEndTimeString}')
             pricesDf = pricesDf.loc[mask]
+            pricesDf.reset_index(inplace=True, drop=True)
+
+            pricesDf = addIndexColumn(index1, pricesDf)
+            pricesDf = addIndexColumn(index2, pricesDf)
+
+            #Reduce the columns to only the relevant ones
+            #Get rid of rows that have NaN price for either of the indices
+            pricesDf = pricesDf[["time", index1.name, index2.name]]
+            pricesDf = pricesDf.dropna()
             pricesDf.reset_index(inplace=True, drop=True)
 
             pricesDf = addPriceChangeColumn(index1, pricesDf)
@@ -180,7 +192,7 @@ for index1Name, index2Name in worthwhileIndices:
     # index1 = Index(index1Name, getUnitWeightForTicker(index1Name))
     # index2 = Index(index2Name, getUnitWeightForTicker(index2Name))
 
-    allLineCharts = getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, 10, 17, 0.5)
+    allLineCharts = getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, "10:15:00", "17:45:00", 0.5)
 
     numColumns = 5
     fig = ps.make_subplots(rows=math.ceil(len(allLineCharts)/numColumns), cols=numColumns)
