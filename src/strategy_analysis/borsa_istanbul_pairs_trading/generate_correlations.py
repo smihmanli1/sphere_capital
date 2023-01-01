@@ -40,12 +40,13 @@ while currentDate != endDate:
     currentDatePricesFile = f"{intervalPricesDataDir}/{currentDateString}_interval_prices.csv"
     pricesDf = pd.read_csv(currentDatePricesFile)
 
-
     allBaskets = getAllBaskets()
-    
     #TODO: Implement addBasketColumns
     pricesDf = addBasketColumns(basketWeightsDir, pricesDf, allBaskets)
-    dailyPriceCorrelations = getCorrelations(pricesDf, allBaskets)
+
+    allArbitrageable = allBaskets + allEtfs
+
+    dailyPriceCorrelations = getCorrelations(pricesDf, allArbitrageable)
 
     with open(f"{runDateString}_correlations.json", "w+") as outfile:
         json.dump(dailyPriceCorrelations, outfile)
