@@ -94,7 +94,9 @@ class BistPairsTradingStrategy(TradingAlgo):
             # print (f"Not in continuous trading. Symbol: {event.symbol} Session: {event.session}")
             return
         
-        self.prices[event.symbol].append((eventTime,self.lob.mid(event.symbol)))
+        # Only consider price if the spread is less than 10 kurus
+        if self.lob.spread(event.symbol) <= 0.10:
+            self.prices[event.symbol].append((eventTime,self.lob.mid(event.symbol)))
         
 
     def orderAckedCallback(self,operation,orderId):

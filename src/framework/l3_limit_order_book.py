@@ -122,6 +122,9 @@ class L3LimitOrderMultiBook(Pipe):
     def mid(self, ticker):
         return self.limitOrderBooks[ticker].mid()
 
+    def spread(self, ticker):
+        return self.limitOrderBooks[ticker].spread()
+
     def applyMarketOrder(self, marketOrder):
         self.limitOrderBooks[marketOrder.symbol].applyMarketOrder(marketOrder)
 
