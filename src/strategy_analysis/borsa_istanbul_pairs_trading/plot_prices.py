@@ -9,57 +9,9 @@ import math
 import plotly.express as px 
 
 from index_weights import getWeights, getUnitWeightForTicker
-
-class Index:
-
-    def __init__(self, name, weightsDf):
-
-        self.name = name
-        self.weightsDf = weightsDf
-
-    def getDistribution(self, distributionDate):
-        weightsDataFrameDatesFormat = '%m/%d/%y'
-        
-        relevantWeightsDistribution = None
-        returnedWeightsDate = None
-
-        #Find the distribution as of the given date
-        for col in self.weightsDf:
-            if col == "Name":
-                continue
-            colParsedToDate = datetime.datetime.strptime(col, weightsDataFrameDatesFormat).date()
-            if colParsedToDate < distributionDate:
-                returnedWeightsDate = col
-                relevantWeightsDistribution = self.weightsDf[["Name",col]]
-
-        returned = dict(zip(relevantWeightsDistribution['Name'],relevantWeightsDistribution[returnedWeightsDate]))
-        return returned
+from utils import Index, addIndexColumn
 
 
-missingData = set()
-def addIndexColumn(index, pricesDf):
-    
-    #Calculate index price
-    pricesDate = pricesDf["time"].iat[0].date()
-    indexDistribution = index.getDistribution(pricesDate)
-    newColumn = pd.Series([0 for i in range(len(pricesDf.index))])
-    for ticker,weight in indexDistribution.items():
-        
-        #TODO: We didn't capture all prices for all the securities in the distributions.
-        #This is because BIST50 equities change overtime and we only capture BIST50 equities of now.
-        if ticker in pricesDf:
-            newColumn += newColumn + weight * pricesDf[ticker]
-        else:
-            #Log the missing ticker
-            if (ticker,index.name) not in missingData:
-                print (f"Ticker {ticker} is missing for {index.name}")
-                missingData.add((ticker,index.name))
-
-    pricesDf[index.name] = newColumn
-
-    return pricesDf
-
-    
 def addPriceChangeColumn(index, pricesDf):
     
     #Calculate index price change
@@ -89,15 +41,18 @@ def calculateReturn(pricesDf, index1Name, index2Name):
             else:
                 continue
 
-        #Other thresholds tried:
+        #Thresholds tried:
         # 0.5
         # 0.1
+
+        #0.2
+        #0.01
         lastPriceChangeDiff = priceChangeDiff
-        if priceChangeDiff >= 0.5:
+        if priceChangeDiff >= 0.2:
             bought = True
             boughtPrice = priceChangeDiff
 
-        if bought and priceChangeDiff <= 0.1:
+        if bought and priceChangeDiff <= 0.01:
             totalReturn *= 1 + (boughtPrice - priceChangeDiff)/100
             bought = False
 
@@ -113,7 +68,7 @@ def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStar
     totalReturn = 1
     while currentDate != endDate:
         currentDateString = currentDate.strftime('%Y-%m-%d')
-        currentDatePricesFile = f"{pricesDir}/{currentDateString}_minutely_prices.csv"
+        currentDatePricesFile = f"{pricesDir}/{currentDateString}_interval_prices.csv"
         try:
 
             pricesDf = pd.read_csv(currentDatePricesFile)
@@ -175,28 +130,23 @@ weightsDir = f"{pricesDir}/etf_position_distributions/"
 # worthwhileIndices = [('ZRE20.F','Z30EA.F')]
 
 worthwhileIndices = [
-                    ('ZPX30.F','ZTM15.F'),
-                    ('ZPX30.F','ZRE20.F'),
-                    ('ZPX30.F','DJIST.F'),
-                    ('ZPX30.F','Z30EA.F'),
-                    ('ZRE20.F','Z30EA.F'),
-                    ('DJIST.F','Z30EA.F'),
-                    ('BIST30_one_each', 'DJIST.F'),
-                    ('BIST30_one_each', 'ZPX30.F'),
-                    ('BIST30_one_each', 'Z30EA.F')
+                    (Index('ZPX30.F', weightsDir), Index('ZTM15.F', weightsDir) ),
+                    (Index('ZPX30.F', weightsDir), Index('ZRE20.F', weightsDir) ),
+                    (Index('ZPX30.F', weightsDir), Index('DJIST.F', weightsDir) ),
+                    (Index('ZPX30.F', weightsDir), Index('Z30EA.F', weightsDir) ),
+                    (Index('ZRE20.F', weightsDir), Index('Z30EA.F', weightsDir) ),
+                    (Index('DJIST.F', weightsDir), Index('Z30EA.F', weightsDir) ),
+                    (Index('BIST30_one_each', weightsDir), Index('DJIST.F', weightsDir) ),
+                    (Index('BIST30_one_each', weightsDir), Index('ZPX30.F', weightsDir) ),
+                    (Index('BIST30_one_each', weightsDir), Index('Z30EA.F', weightsDir) )
                     ]
 
 
 
-for index1Name, index2Name in worthwhileIndices:
+for index1, index2 in worthwhileIndices:
     
-    #Use this to use only stocks' mids when calculating alpha        
-    index1 = Index(index1Name, getWeights(index1Name, weightsDir))
-    index2 = Index(index2Name, getWeights(index2Name, weightsDir))
-
-    #Use this to use ETF prices for everythin except BIST30 when calculating alphs
-    # index1 = Index(index1Name, getUnitWeightForTicker(index1Name))
-    # index2 = Index(index2Name, getUnitWeightForTicker(index2Name))
+    index1Name = index1.name
+    index2Name = index2.name
 
     allLineCharts = getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, "10:15:00", "17:45:00", 0.5)
 
@@ -214,6 +164,6 @@ for index1Name, index2Name in worthwhileIndices:
         height=4000,
     )
 
-    # fig.show()
+    fig.show()
 
 
