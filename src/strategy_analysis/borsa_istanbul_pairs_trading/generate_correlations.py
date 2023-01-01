@@ -66,10 +66,7 @@ while currentDate != endDate:
             json.dump(dailyPriceCorrelations, outfile)
     except FileNotFoundError:
         pass
-    # except:
-    #     print (f"Critical error occurred when generating correlations for {currentDate}")
-    finally:
-        currentDate += datetime.timedelta(days=1)
+    
+    currentDate += datetime.timedelta(days=1)
 
 
-        
