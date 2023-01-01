@@ -72,10 +72,4 @@ while currentDate != endDate:
         currentDate += datetime.timedelta(days=1)
 
 
-# print ("Correlations: ")
-# for series in timeseries:
-#     if series in dailyPriceCorrelations:
-#         print (series)
-#         correlationsList = list(dailyPriceCorrelations[series].items())
-#         correlationsList.sort(key=lambda x: x[1])
-#         print (f"{correlationsList}\n\n\n")
+        
