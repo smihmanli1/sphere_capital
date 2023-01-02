@@ -135,12 +135,18 @@ startDate = datetime.datetime.strptime(startDateString, '%Y-%m-%d')
 endDate = datetime.datetime.strptime(endDateString, '%Y-%m-%d')
 
 worthwhileIndices = [
-                    (Index('BIST30_one_each', weightsDir), Index('DJIST.F_underlying', weightsDir) ),
-                    (Index('BIST30_one_each', weightsDir), Index('ZPX30.F_underlying', weightsDir) ),
-                    (Index('BIST30_one_each', weightsDir), Index('Z30EA.F_underlying', weightsDir) ),
-                    (Index('BIST30_one_each', weightsDir), Index('ZRE20.F_underlying', weightsDir) ),
-                    (Index('BIST30_one_each', weightsDir), Index('ZTM15.F_underlying', weightsDir) ),
-                    (Index('KRDMA.E', weightsDir), Index('KRDMD.E', weightsDir) ),
+                    # (Index('BIST30_one_each', weightsDir), Index('DJIST.F_underlying', weightsDir) ),
+                    # (Index('BIST30_one_each', weightsDir), Index('ZPX30.F_underlying', weightsDir) ),
+                    # (Index('BIST30_one_each', weightsDir), Index('Z30EA.F_underlying', weightsDir) ),
+                    # (Index('BIST30_one_each', weightsDir), Index('ZRE20.F_underlying', weightsDir) ),
+                    # (Index('BIST30_one_each', weightsDir), Index('ZTM15.F_underlying', weightsDir) ),
+                    # (Index('KRDMA.E', weightsDir), Index('KRDMD.E', weightsDir) ),
+                    (Index('DJIST.F_underlying', weightsDir), Index('ZPX30.F_underlying', weightsDir) ),
+                    (Index('Z30EA.F_underlying', weightsDir), Index('ZPX30.F_underlying', weightsDir) ),
+                    (Index('Z30EA.F_underlying', weightsDir), Index('ZRE20.F_underlying', weightsDir) ),
+                    (Index('DJIST.F_underlying', weightsDir), Index('ZTM15.F_underlying', weightsDir) ),
+                    (Index('DJIST.F_underlying', weightsDir), Index('Z30EA.F_underlying', weightsDir) ),
+                    (Index('ZTM15.F_underlying', weightsDir), Index('Z30EA.F_underlying', weightsDir) ),
                     ]
 
 
