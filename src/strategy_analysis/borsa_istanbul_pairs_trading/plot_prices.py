@@ -48,11 +48,11 @@ def calculateReturn(pricesDf, index1Name, index2Name):
         #0.2
         #0.01
         lastPriceChangeDiff = priceChangeDiff
-        if priceChangeDiff >= 0.2:
+        if priceChangeDiff >= 0.5:
             bought = True
             boughtPrice = priceChangeDiff
 
-        if bought and priceChangeDiff <= 0.01:
+        if bought and priceChangeDiff <= 0.1:
             totalReturn *= 1 + (boughtPrice - priceChangeDiff)/100
             bought = False
 
@@ -135,15 +135,10 @@ startDate = datetime.datetime.strptime(startDateString, '%Y-%m-%d')
 endDate = datetime.datetime.strptime(endDateString, '%Y-%m-%d')
 
 worthwhileIndices = [
-                    # (Index('ZPX30.F', weightsDir), Index('ZTM15.F', weightsDir) ),
-                    # (Index('ZPX30.F', weightsDir), Index('ZRE20.F', weightsDir) ),
-                    # (Index('ZPX30.F', weightsDir), Index('DJIST.F', weightsDir) ),
-                    # (Index('ZPX30.F', weightsDir), Index('Z30EA.F', weightsDir) ),
-                    # (Index('ZRE20.F', weightsDir), Index('Z30EA.F', weightsDir) ),
-                    # (Index('DJIST.F', weightsDir), Index('Z30EA.F', weightsDir) ),
-                    (Index('BIST30_one_each', weightsDir), Index('DJIST.F', weightsDir) ),
-                    (Index('BIST30_one_each', weightsDir), Index('ZPX30.F', weightsDir) ),
-                    (Index('BIST30_one_each', weightsDir), Index('Z30EA.F', weightsDir) )
+                    (Index('BIST30_one_each', weightsDir), Index('DJIST.F_underlying', weightsDir) ),
+                    (Index('BIST30_one_each', weightsDir), Index('ZPX30.F_underlying', weightsDir) ),
+                    (Index('BIST30_one_each', weightsDir), Index('Z30EA.F_underlying', weightsDir) ),
+                    (Index('KRDMA.E', weightsDir), Index('KRDMD.E', weightsDir) ),
                     ]
 
 
