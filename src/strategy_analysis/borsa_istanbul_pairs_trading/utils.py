@@ -8,7 +8,7 @@ class Index:
     def __init__(self, name, weightsDir):
 
         self.name = name
-        
+
         try:
             self.weightsDf = getWeights(name, weightsDir)
         except FileNotFoundError:
