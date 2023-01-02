@@ -7,7 +7,7 @@ import json
 
 from utils import addIndexColumn, Index
 
-allEtfs = ['USDTR.F', 'ZPBDL.F', 'ZPX30.F', 'ZRE20.F', 'ZPT10.F', 'GLDTR.F', 'DJIST.F', 'Z30KE.F', 'GMSTR.F', 'Z30KP.F', 'ZTM15.F', 'Z30EA.F', 'ZPLIB.F', 'ZELOT.F', 'ZGOLD.F']
+allIndividualNames = ['USDTR.F', 'ZPBDL.F', 'ZPX30.F', 'ZRE20.F', 'ZPT10.F', 'GLDTR.F', 'DJIST.F', 'Z30KE.F', 'GMSTR.F', 'Z30KP.F', 'ZTM15.F', 'Z30EA.F', 'ZPLIB.F', 'ZELOT.F', 'ZGOLD.F', 'KRDMA.E', 'KRDMD.E']
 # baskets = [
 #     'ZPBDL.F_underlying', 
 #     'ZPX30.F_underlying', 
@@ -79,7 +79,7 @@ while currentDate != endDate:
         pricesDf["time"] = pd.to_datetime(pricesDf["time"])
         pricesDf = addBasketColumns(pricesDf, allBaskets)
 
-        allArbitrageable = baskets + allEtfs
+        allArbitrageable = baskets + allIndividualNames
         dailyPriceCorrelations = getCorrelations(pricesDf, allArbitrageable)
 
         with open(f"{currentDateString}_correlations.json", "w+") as outfile:
