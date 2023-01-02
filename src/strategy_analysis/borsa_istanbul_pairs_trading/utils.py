@@ -47,8 +47,7 @@ def addIndexColumn(index, pricesDf):
         if ticker in pricesDf:
             newColumn += newColumn + weight * pricesDf[ticker]
         else:
-            print (f"CRITICAL -- Ticker {ticker} is missing for {index.name}")
-            exit()
+            print (f"Ticker {ticker} is missing for {index.name} on date {pricesDate}. Treating its price as 0")
 
     pricesDf[index.name] = newColumn
 
