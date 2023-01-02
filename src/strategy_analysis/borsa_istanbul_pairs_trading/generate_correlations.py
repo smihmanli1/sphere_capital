@@ -7,15 +7,13 @@ import json
 
 from utils import addIndexColumn, Index
 
-allIndividualNames = ['USDTR.F', 'ZPBDL.F', 'ZPX30.F', 'ZRE20.F', 'ZPT10.F', 'GLDTR.F', 'DJIST.F', 'Z30KE.F', 'GMSTR.F', 'Z30KP.F', 'ZTM15.F', 'Z30EA.F', 'ZPLIB.F', 'ZELOT.F', 'ZGOLD.F', 'KRDMA.E', 'KRDMD.E']
+allIndividualNames = ['KRDMA.E', 'KRDMD.E']
 baskets = [
     'ZPBDL.F_underlying', 
     'ZPX30.F_underlying', 
     'ZRE20.F_underlying', 
     'ZPT10.F_underlying', 
-    'DJIST.F_underlying', 
-    'Z30KE.F_underlying', 
-    'Z30KP.F_underlying', 
+    'DJIST.F_underlying',
     'ZTM15.F_underlying', 
     'Z30EA.F_underlying', 
     'ZPLIB.F_underlying', 
