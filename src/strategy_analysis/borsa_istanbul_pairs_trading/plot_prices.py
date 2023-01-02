@@ -83,16 +83,23 @@ def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStar
 
             pricesDf = pricesDf.dropna()
             pricesDf.reset_index(inplace=True, drop=True)
+            if pricesDf.empty:
+                currentDate += datetime.timedelta(days=1)
+                continue
 
             
             #We want to backtest starting from 15 minutes after the first pricing started for this
             #pair.
+            #Filter out pricing early and late in the session
             pricingStartDatetime = pricesDf["time"].iat[0]
             backtestingStartTime = (pricingStartDatetime + datetime.timedelta(minutes=15)).time()
-            #Filter out pricing early and late in the session
+            
             mask = (pricesDf["time"] >= f'{currentDateString} {backtestingStartTime}') & (pricesDf["time"] <= f'{currentDateString} {tradingEndTimeString}')
             pricesDf = pricesDf.loc[mask]
             pricesDf.reset_index(inplace=True, drop=True)
+            if pricesDf.empty:
+                currentDate += datetime.timedelta(days=1)
+                continue
 
             pricesDf = addPriceChangeColumn(index1, pricesDf)
             pricesDf = addPriceChangeColumn(index2, pricesDf)
@@ -120,22 +127,20 @@ def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStar
 
 
 pricesDir = sys.argv[1]
-startDateString = sys.argv[2]
-endDateString = sys.argv[3]
+weightsDir = sys.argv[2]
+startDateString = sys.argv[3]
+endDateString = sys.argv[4]
 
 startDate = datetime.datetime.strptime(startDateString, '%Y-%m-%d')
 endDate = datetime.datetime.strptime(endDateString, '%Y-%m-%d')
 
-weightsDir = f"{pricesDir}/etf_position_distributions/"
-# worthwhileIndices = [('ZRE20.F','Z30EA.F')]
-
 worthwhileIndices = [
-                    (Index('ZPX30.F', weightsDir), Index('ZTM15.F', weightsDir) ),
-                    (Index('ZPX30.F', weightsDir), Index('ZRE20.F', weightsDir) ),
-                    (Index('ZPX30.F', weightsDir), Index('DJIST.F', weightsDir) ),
-                    (Index('ZPX30.F', weightsDir), Index('Z30EA.F', weightsDir) ),
-                    (Index('ZRE20.F', weightsDir), Index('Z30EA.F', weightsDir) ),
-                    (Index('DJIST.F', weightsDir), Index('Z30EA.F', weightsDir) ),
+                    # (Index('ZPX30.F', weightsDir), Index('ZTM15.F', weightsDir) ),
+                    # (Index('ZPX30.F', weightsDir), Index('ZRE20.F', weightsDir) ),
+                    # (Index('ZPX30.F', weightsDir), Index('DJIST.F', weightsDir) ),
+                    # (Index('ZPX30.F', weightsDir), Index('Z30EA.F', weightsDir) ),
+                    # (Index('ZRE20.F', weightsDir), Index('Z30EA.F', weightsDir) ),
+                    # (Index('DJIST.F', weightsDir), Index('Z30EA.F', weightsDir) ),
                     (Index('BIST30_one_each', weightsDir), Index('DJIST.F', weightsDir) ),
                     (Index('BIST30_one_each', weightsDir), Index('ZPX30.F', weightsDir) ),
                     (Index('BIST30_one_each', weightsDir), Index('Z30EA.F', weightsDir) )
