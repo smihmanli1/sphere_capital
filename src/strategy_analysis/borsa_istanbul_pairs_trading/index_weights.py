@@ -14,7 +14,6 @@ def getUnitWeightForTicker(tickerName):
 def getWeights(indexName, weightsDir):
     weightsCsvFile = f"{weightsDir}/{indexName}.csv"
 
-    print (f"Trying to open weights csv file: {weightsCsvFile}")
     weights = pd.read_csv(weightsCsvFile)
 
     #normalize weights df
