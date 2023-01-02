@@ -135,12 +135,12 @@ startDate = datetime.datetime.strptime(startDateString, '%Y-%m-%d')
 endDate = datetime.datetime.strptime(endDateString, '%Y-%m-%d')
 
 worthwhileIndices = [
-                    (Index('BIST30_one_each', weightsDir), Index('DJIST.F_underlying', weightsDir) ),
-                    (Index('BIST30_one_each', weightsDir), Index('ZPX30.F_underlying', weightsDir) ),
-                    (Index('BIST30_one_each', weightsDir), Index('Z30EA.F_underlying', weightsDir) ),
-                    (Index('BIST30_one_each', weightsDir), Index('ZRE20.F_underlying', weightsDir) ),
-                    (Index('BIST30_one_each', weightsDir), Index('ZTM15.F_underlying', weightsDir) ),
-                    (Index('KRDMA.E', weightsDir), Index('KRDMD.E', weightsDir) ),
+                    # (Index('BIST30_one_each', weightsDir), Index('DJIST.F_underlying', weightsDir) ),
+                    # (Index('BIST30_one_each', weightsDir), Index('ZPX30.F_underlying', weightsDir) ),
+                    # (Index('BIST30_one_each', weightsDir), Index('Z30EA.F_underlying', weightsDir) ),
+                    # (Index('BIST30_one_each', weightsDir), Index('ZRE20.F_underlying', weightsDir) ),
+                    # (Index('BIST30_one_each', weightsDir), Index('ZTM15.F_underlying', weightsDir) ),
+                    # (Index('KRDMA.E', weightsDir), Index('KRDMD.E', weightsDir) ),
                     (Index('DJIST.F_underlying', weightsDir), Index('ZPX30.F_underlying', weightsDir) ),
                     (Index('Z30EA.F_underlying', weightsDir), Index('ZPX30.F_underlying', weightsDir) ),
                     (Index('Z30EA.F_underlying', weightsDir), Index('ZRE20.F_underlying', weightsDir) ),
@@ -171,7 +171,11 @@ for index1, index2 in worthwhileIndices:
     index1Name = index1.name
     index2Name = index2.name
 
-    allLineCharts = getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, "10:15:00", "17:45:00", 0.5, 0.5, 0.1)
+    #High correlation ones (i.e. The ones after KRDMA-KRDMD)
+    allLineCharts = getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, "10:15:00", "17:45:00", 0.5, 0.05, 0.01)
+
+    #For lower correlation ones (i.e. KRDMA-KRDMD and the ones before)
+    # allLineCharts = getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, "10:15:00", "17:45:00", 0.5, 0.5, 0.1)
 
     numColumns = 5
     fig = ps.make_subplots(rows=math.ceil(len(allLineCharts)/numColumns), cols=numColumns)
