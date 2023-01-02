@@ -138,6 +138,8 @@ worthwhileIndices = [
                     (Index('BIST30_one_each', weightsDir), Index('DJIST.F_underlying', weightsDir) ),
                     (Index('BIST30_one_each', weightsDir), Index('ZPX30.F_underlying', weightsDir) ),
                     (Index('BIST30_one_each', weightsDir), Index('Z30EA.F_underlying', weightsDir) ),
+                    (Index('BIST30_one_each', weightsDir), Index('ZRE20.F_underlying', weightsDir) ),
+                    (Index('BIST30_one_each', weightsDir), Index('ZTM15.F_underlying', weightsDir) ),
                     (Index('KRDMA.E', weightsDir), Index('KRDMD.E', weightsDir) ),
                     ]
 
@@ -164,6 +166,6 @@ for index1, index2 in worthwhileIndices:
         height=4000,
     )
 
-    fig.show()
+    # fig.show()
 
 
