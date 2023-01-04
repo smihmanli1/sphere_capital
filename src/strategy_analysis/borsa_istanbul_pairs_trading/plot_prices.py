@@ -61,11 +61,22 @@ def calculateReturn(pricesDf, index1Name, index2Name, buyThreshold, sellThreshol
 
     return totalReturn
 
-def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStartTimeString, tradingEndTimeString, plotPriceThreshold, buyThreshold, sellThreshold):
+def getAllPriceCharts(
+    pricesDir, 
+    startDate, 
+    endDate, 
+    index1, 
+    index2, 
+    tradingStartTimeOffsetMinutes, 
+    tradingEndTimeString, 
+    plotPriceThreshold, 
+    buyThreshold, 
+    sellThreshold):
 
     currentDate = startDate
     returnedLineCharts = []
     totalReturn = 1
+    standardDeviations = []
     while currentDate != endDate:
         currentDateString = currentDate.strftime('%Y-%m-%d')
         currentDatePricesFile = f"{pricesDir}/{currentDateString}_interval_prices.csv"
@@ -92,7 +103,7 @@ def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStar
             #pair.
             #Filter out pricing early and late in the session
             pricingStartDatetime = pricesDf["time"].iat[0]
-            backtestingStartTime = (pricingStartDatetime + datetime.timedelta(minutes=15)).time()
+            backtestingStartTime = (pricingStartDatetime + datetime.timedelta(minutes=tradingStartTimeOffsetMinutes)).time()
             
             mask = (pricesDf["time"] >= f'{currentDateString} {backtestingStartTime}') & (pricesDf["time"] <= f'{currentDateString} {tradingEndTimeString}')
             pricesDf = pricesDf.loc[mask]
@@ -107,6 +118,8 @@ def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStar
             priceChangeDiff = pricesDf[f"{index1.name}_change"] - pricesDf[f"{index2.name}_change"]
             pricesDf["price_change_diff"] = priceChangeDiff
 
+            standardDeviations.append(pricesDf["price_change_diff"].std())
+
             totalReturn *= calculateReturn(pricesDf, index1.name, index2.name, buyThreshold, sellThreshold)
 
             priceChangeDiff = [min(i,plotPriceThreshold) for i in priceChangeDiff]
@@ -120,9 +133,11 @@ def getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, tradingStar
 
         currentDate += datetime.timedelta(days=1)
 
-
+    avgStdDeviationOfPriceChangeDiffs = sum(standardDeviations) / len(standardDeviations)
     print (f"Total return for pair {index1.name} - {index2.name}: {totalReturn}")
-
+    print (f"Avg std deviation of prices change diffs: {avgStdDeviationOfPriceChangeDiffs}")
+    print (f"Calculated optimal threshold: (\"{index1.name}\", \"{index2.name}\") : {avgStdDeviationOfPriceChangeDiffs/2}")
+    
     return returnedLineCharts
 
 
@@ -134,13 +149,78 @@ endDateString = sys.argv[4]
 startDate = datetime.datetime.strptime(startDateString, '%Y-%m-%d')
 endDate = datetime.datetime.strptime(endDateString, '%Y-%m-%d')
 
+
+newBuyThresholds = {
+    ("BIST30_one_each", "DJIST.F_underlying") : (0.23135006184385065),
+    ("BIST30_one_each", "ZPX30.F_underlying") : (0.24637276421239263),
+    ("BIST30_one_each", "Z30EA.F_underlying") : (0.22715090978788477),
+    ("BIST30_one_each", "ZRE20.F_underlying") : (0.22814700181221192),
+    ("BIST30_one_each", "ZTM15.F_underlying") : (0.23098515918354467),
+    ("KRDMA.E", "KRDMD.E") : (0.2333543059856918),
+    ("DJIST.F_underlying", "ZPX30.F_underlying") : (0.03756987732303037),
+    ("Z30EA.F_underlying", "ZPX30.F_underlying") : (0.06878611000768027),
+    ("Z30EA.F_underlying", "ZRE20.F_underlying") : (0.1027274279616367),
+    ("DJIST.F_underlying", "ZTM15.F_underlying") : (0.034190926808404264),
+    ("DJIST.F_underlying", "Z30EA.F_underlying") : (0.03922820836931534),
+    ("ZTM15.F_underlying", "Z30EA.F_underlying") : (0.0675590694448618),
+    ("ZPX30.F_underlying", "ZTM15.F_underlying") : (0.04747330454210902),
+    ("ZPX30.F_underlying", "ZPLIB.F_underlying") : (0.05422574679433837),
+    ("ZPX30.F_underlying", "ZELOT.F_underlying") : (0.05422574679433837),
+    ("DJIST.F_underlying", "ZPLIB.F_underlying") : (0.08000526910535635),
+    ("DJIST.F_underlying", "ZELOT.F_underlying") : (0.08000526910535635),
+    ("ZTM15.F_underlying", "ZPLIB.F_underlying") : (0.08257641874573943),
+    ("ZTM15.F_underlying", "ZELOT.F_underlying") : (0.08257641874573943),
+    ("Z30EA.F_underlying", "ZPLIB.F_underlying") : (0.10551719280641346),
+    ("Z30EA.F_underlying", "ZELOT.F_underlying") : (0.10551719280641346),
+    ("ZPT10.F_underlying", "Z30EA.F_underlying") : (0.13060986415947579),
+    ("ZRE20.F_underlying", "ZTM15.F_underlying") : (0.14783775681318326),
+    ("ZRE20.F_underlying", "Z30EA.F_underlying") : (0.1027274279616367),
+    ("ZPBDL.F_underlying", "Z30EA.F_underlying") : (0.13060986415947579),
+    ("ZPBDL.F_underlying", "DJIST.F_underlying") : (0.12549751476420187),
+    ("ZPBDL.F_underlying", "ZRE20.F_underlying") : (0.12246690799621894)
+}
+
+oldBuyThresholds = {
+
+    ('BIST30_one_each', 'DJIST.F_underlying') : 0.5,
+    ('BIST30_one_each', 'ZPX30.F_underlying') : 0.5,
+    ('BIST30_one_each', 'Z30EA.F_underlying') : 0.5,
+    ('BIST30_one_each', 'ZRE20.F_underlying') : 0.5,
+    ('BIST30_one_each', 'ZTM15.F_underlying') : 0.5,
+    ('KRDMA.E', 'KRDMD.E')                    : 0.5,
+
+    ("DJIST.F_underlying", "ZPX30.F_underlying") : 0.05,
+    ("Z30EA.F_underlying", "ZPX30.F_underlying") : 0.05,
+    ("Z30EA.F_underlying", "ZRE20.F_underlying") : 0.05,
+    ("DJIST.F_underlying", "ZTM15.F_underlying") : 0.05,
+    ("DJIST.F_underlying", "Z30EA.F_underlying") : 0.05,
+    ("ZTM15.F_underlying", "Z30EA.F_underlying") : 0.05,
+    ("ZPX30.F_underlying", "ZTM15.F_underlying") : 0.05,
+    ("ZPX30.F_underlying", "ZPLIB.F_underlying") : 0.05,
+    ("ZPX30.F_underlying", "ZELOT.F_underlying") : 0.05,
+    ("DJIST.F_underlying", "ZPLIB.F_underlying") : 0.05,
+    ("DJIST.F_underlying", "ZELOT.F_underlying") : 0.05,
+    ("ZTM15.F_underlying", "ZPLIB.F_underlying") : 0.05,
+    ("ZTM15.F_underlying", "ZELOT.F_underlying") : 0.05,
+    ("Z30EA.F_underlying", "ZPLIB.F_underlying") : 0.05,
+    ("Z30EA.F_underlying", "ZELOT.F_underlying") : 0.05,
+    ("ZPT10.F_underlying", "Z30EA.F_underlying") : 0.05,
+    ("ZRE20.F_underlying", "ZTM15.F_underlying") : 0.05,
+    ("ZRE20.F_underlying", "Z30EA.F_underlying") : 0.05,
+    ("ZPBDL.F_underlying", "Z30EA.F_underlying") : 0.05,
+    ("ZPBDL.F_underlying", "DJIST.F_underlying") : 0.05,
+    ("ZPBDL.F_underlying", "ZRE20.F_underlying") : 0.05,
+
+    
+}
+
 worthwhileIndices = [
-                    # (Index('BIST30_one_each', weightsDir), Index('DJIST.F_underlying', weightsDir) ),
-                    # (Index('BIST30_one_each', weightsDir), Index('ZPX30.F_underlying', weightsDir) ),
-                    # (Index('BIST30_one_each', weightsDir), Index('Z30EA.F_underlying', weightsDir) ),
-                    # (Index('BIST30_one_each', weightsDir), Index('ZRE20.F_underlying', weightsDir) ),
-                    # (Index('BIST30_one_each', weightsDir), Index('ZTM15.F_underlying', weightsDir) ),
-                    # (Index('KRDMA.E', weightsDir), Index('KRDMD.E', weightsDir) ),
+                    (Index('BIST30_one_each', weightsDir), Index('DJIST.F_underlying', weightsDir) ),
+                    (Index('BIST30_one_each', weightsDir), Index('ZPX30.F_underlying', weightsDir) ),
+                    (Index('BIST30_one_each', weightsDir), Index('Z30EA.F_underlying', weightsDir) ),
+                    (Index('BIST30_one_each', weightsDir), Index('ZRE20.F_underlying', weightsDir) ),
+                    (Index('BIST30_one_each', weightsDir), Index('ZTM15.F_underlying', weightsDir) ),
+                    (Index('KRDMA.E', weightsDir), Index('KRDMD.E', weightsDir) ),
                     (Index('DJIST.F_underlying', weightsDir), Index('ZPX30.F_underlying', weightsDir) ),
                     (Index('Z30EA.F_underlying', weightsDir), Index('ZPX30.F_underlying', weightsDir) ),
                     (Index('Z30EA.F_underlying', weightsDir), Index('ZRE20.F_underlying', weightsDir) ),
@@ -171,11 +251,20 @@ for index1, index2 in worthwhileIndices:
     index1Name = index1.name
     index2Name = index2.name
 
-    #High correlation ones (i.e. The ones after KRDMA-KRDMD)
-    allLineCharts = getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, "10:15:00", "17:45:00", 0.5, 0.05, 0.01)
+    allLineCharts = getAllPriceCharts(
+        pricesDir, 
+        startDate, 
+        endDate, 
+        index1, 
+        index2, 
+        tradingStartTimeOffsetMinutes=15, 
+        tradingEndTimeString="17:45:00", 
+        plotPriceThreshold=0.5, 
+        buyThreshold= newBuyThresholds[(index1Name,index2Name)],
+        sellThreshold= newBuyThresholds[(index1Name,index2Name)]/5)
 
-    #For lower correlation ones (i.e. KRDMA-KRDMD and the ones before)
-    # allLineCharts = getAllPriceCharts(pricesDir, startDate, endDate, index1, index2, "10:15:00", "17:45:00", 0.5, 0.5, 0.1)
+    print ()
+    print ()
 
     numColumns = 5
     fig = ps.make_subplots(rows=math.ceil(len(allLineCharts)/numColumns), cols=numColumns)
