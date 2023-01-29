@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 import plotly.subplots as ps
 import math
 import plotly.express as px 
+import numpy as np
 
 from index_weights import getWeights, getUnitWeightForTicker
 from utils import Index, addIndexColumn
@@ -22,6 +23,13 @@ def addPriceChangeColumn(index, pricesDf):
 
     return pricesDf
 
+def getSharpeRatio(allReturns):
+    avgReturn = sum(allReturns)/len(allReturns)
+    stdDev = np.std(allReturns)
+
+    return avgReturn / stdDev
+
+
 def calculateReturn(pricesDf, index1Name, index2Name, buyThreshold, sellThreshold):
 
     numberOfMinutes = len(pricesDf[index1Name])
@@ -29,7 +37,7 @@ def calculateReturn(pricesDf, index1Name, index2Name, buyThreshold, sellThreshol
     bought = False
     boughtPrice = 0
     lastPriceChangeDiff = 0
-    
+    allReturns = []
     for index,row in pricesDf.iterrows():
         priceChangeDiff = abs(row["price_change_diff"])
         
@@ -53,13 +61,17 @@ def calculateReturn(pricesDf, index1Name, index2Name, buyThreshold, sellThreshol
             boughtPrice = priceChangeDiff
 
         if bought and priceChangeDiff <= sellThreshold:
-            totalReturn *= 1 + (boughtPrice - priceChangeDiff)/100
+            thisReturn = 1 + (boughtPrice - priceChangeDiff)/100
+            totalReturn *= thisReturn
             bought = False
+            allReturns.append(thisReturn)
 
     if bought:
-        totalReturn *= 1 + (boughtPrice - lastPriceChangeDiff)/100
+        thisReturn = (boughtPrice - lastPriceChangeDiff)/100
+        totalReturn *= 1 + thisReturn
+        allReturns.append(thisReturn)
 
-    return totalReturn
+    return totalReturn, allReturns
 
 def getAllPriceCharts(
     pricesDir, 
@@ -77,6 +89,7 @@ def getAllPriceCharts(
     returnedLineCharts = []
     totalReturn = 1
     standardDeviations = []
+    allReturns = []
     while currentDate != endDate:
         currentDateString = currentDate.strftime('%Y-%m-%d')
         currentDatePricesFile = f"{pricesDir}/{currentDateString}_interval_prices.csv"
@@ -120,7 +133,9 @@ def getAllPriceCharts(
 
             standardDeviations.append(pricesDf["price_change_diff"].std())
 
-            totalReturn *= calculateReturn(pricesDf, index1.name, index2.name, buyThreshold, sellThreshold)
+            totalReturnForDay, allReturnsForDay = calculateReturn(pricesDf, index1.name, index2.name, buyThreshold, sellThreshold)
+            totalReturn *= totalReturnForDay
+            allReturns += allReturnsForDay
 
             priceChangeDiff = [min(i,plotPriceThreshold) for i in priceChangeDiff]
             priceChangeDiff = [max(i,-plotPriceThreshold) for i in priceChangeDiff]
@@ -135,6 +150,7 @@ def getAllPriceCharts(
 
     avgStdDeviationOfPriceChangeDiffs = sum(standardDeviations) / len(standardDeviations)
     print (f"Total return for pair {index1.name} - {index2.name}: {totalReturn}")
+    print (f"Sharpe ratio for this return {getSharpeRatio(allReturns)}")
     print (f"Avg std deviation of prices change diffs: {avgStdDeviationOfPriceChangeDiffs}")
     print (f"Calculated optimal threshold: (\"{index1.name}\", \"{index2.name}\") : {avgStdDeviationOfPriceChangeDiffs/2}")
     

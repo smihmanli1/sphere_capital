@@ -8,58 +8,92 @@ from framework.trading_algo import TradingAlgo
 
 MILLIS_IN_A_SEC = 1000
 
-class BistPairsTradingStrategy(TradingAlgo):
+class FullBookBistPairsTradingStrategy(TradingAlgo):
 
     #Find type for 'parameters' and 'tickerPairs' in bist50_pairs_trading_backtester
     def __init__(self, lob, parameters):
         self.lob = lob
         self.eventCount = 0
         self.parameters = parameters
-
-        self.prices = defaultdict(list)
-
-
-    def mergeAllPrices(self, prices):
         
-        for ticker,pricesTimes in prices.items():
-            tradingDateTime = pricesTimes[0][0]
-            break
+        self.krdmaFirstBid = None
+        self.krdmaFirstAsk = None
+        self.krdmdFirstBid = None
+        self.krdmdFirstAsk = None
 
-        startTime = tradingDateTime.replace(hour=self.parameters["exchange_open_time"].hour,minute=self.parameters["exchange_open_time"].minute,second=self.parameters["exchange_open_time"].second, microsecond=0)
-        endTime = tradingDateTime.replace(hour=self.parameters["exchange_close_time"].hour,minute=self.parameters["exchange_close_time"].minute,second=self.parameters["exchange_close_time"].second,  microsecond=0)
+        self.lastTriggerTime = datetime.datetime(1970,1,1)
+        self.krdmaAskPercentChange = None
+        self.krdmdBidPercentChange = None
 
-        currentTime = startTime
-        timeseries = []
-        while currentTime <= endTime:
-            timeseries.append(currentTime)
-            currentTime = currentTime + datetime.timedelta(seconds=15)
+        self.krdmaBestBid = None
+        self.krdmaBestAsk = None
 
-        timeseries = pd.DataFrame({'time' : timeseries})
-        for ticker,prices in prices.items():
-            tickerPriceChange = pd.DataFrame({'time': [elem[0] for elem in prices], ticker: [elem[1] for elem in prices]})
-            timeseries = pd.merge_asof(timeseries, tickerPriceChange, on='time')
+        self.krdmdBestBid = None
+        self.krdmdBestAsk = None
+
+        #Conds
+        self.threshold = parameters["threshold"]/100
+        self.triggerIntervalSeconds = parameters["trigger_interval_seconds"] 
+        
+    
+    def checkPriceAndTrigger(self, event, eventTime):
+        
+        #Trigger only every set amount of seconds
+        secondsSinceLastTrigger = (eventTime - self.lastTriggerTime).total_seconds()
+        if secondsSinceLastTrigger < self.triggerIntervalSeconds:
+            return
+
+        # if self.krdmaAskPercentChange is None or self.krdmdBidPercentChange is None:
+        #     return
+
+        if self.krdmdBestBid is None or\
+           self.krdmaBestAsk is None or\
+           self.krdmaFirstBid is None or\
+           self.krdmdFirstAsk is None:
+           return
+
+        self.lastTriggerTime = eventTime
+
+        # if self.krdmdBidPercentChange - self.krdmaAskPercentChange > self.threshold:
+        #     print (f"Trading signal -- Event: {event}, Event time: {eventTime}")
+        #     print (f"KRDMD_bid - KRDMA_ask= {self.krdmdBestBid - self.krdmaBestAsk}")
+        #     print (f"Firsf_KRDMA_bid - First_KRDMD_ask= {self.krdmaFirstBid - self.krdmdFirstAsk}")
+
+        if self.krdmdBestBid - self.krdmaBestAsk + self.krdmaFirstBid - self.krdmdFirstAsk > 0:
+            print (f"Trading signal -- Event: {event}, Event time: {eventTime}")
+            print (f"KRDMD_bid - KRDMA_ask= {self.krdmdBestBid - self.krdmaBestAsk}")
+            print (f"Firsf_KRDMA_bid - First_KRDMD_ask= {self.krdmaFirstBid - self.krdmdFirstAsk}")
+
+    def processKrdma(self, event, eventTime):
+        if self.krdmaFirstBid is None:
+            self.krdmaFirstBid = self.lob.bestBid(event.symbol).price        
+
+        if self.krdmaFirstAsk is None:
+            self.krdmaFirstAsk = self.lob.bestAsk(event.symbol).price
+
+        self.krdmaBestBid = self.lob.bestBid(event.symbol).price
+        self.krdmaBestAsk = self.lob.bestAsk(event.symbol).price
+
+        
             
-
-        return timeseries
-            
-    def getPricesDataFrame(self):
-        return self.mergeAllPrices(self.prices)
-
-    def getPercentChangesDataFrame(self):
-        percentChanges = {}
-
-        for ticker,prices in self.prices.items():
-            newArray = []
-            startingPrice = prices[0][1]
-            for timestamp,price in prices:
-                newArray.append( (timestamp, (price - startingPrice) / startingPrice) )
-            percentChanges[ticker] = newArray
-
+        self.krdmaAskPercentChange = (self.lob.bestAsk(event.symbol).price - self.krdmaFirstAsk) / self.krdmaFirstAsk
+        self.checkPriceAndTrigger(event, eventTime)
         
-        allPrices = self.mergeAllPrices(percentChanges)
-
-        return allPrices
+    def processKrdmd(self, event, eventTime):
+        if self.krdmdFirstBid is None:
+            self.krdmdFirstBid = self.lob.bestBid(event.symbol).price
         
+        if self.krdmdFirstAsk is None:
+            self.krdmdFirstAsk = self.lob.bestAsk(event.symbol).price
+
+        self.krdmdBestBid = self.lob.bestBid(event.symbol).price
+        self.krdmdBestAsk = self.lob.bestAsk(event.symbol).price
+
+        self.krdmdBidPercentChange = (self.lob.bestBid(event.symbol).price - self.krdmdFirstBid) / self.krdmdFirstBid
+        self.checkPriceAndTrigger(event, eventTime)
+        
+
+
 
     def accept(self, event):
         
@@ -96,8 +130,14 @@ class BistPairsTradingStrategy(TradingAlgo):
         
         # Only consider price if the spread is less than 10 kurus
         if self.lob.spread(event.symbol) <= 0.10:
-            self.prices[event.symbol].append((eventTime,self.lob.mid(event.symbol)))
+            pass
         
+        if event.symbol == "KRDMA.E":
+            self.processKrdma(event, eventTime)
+        elif event.symbol == "KRDMD.E":
+            self.processKrdmd(event, eventTime)
+
+
 
     def orderAckedCallback(self,operation,orderId):
         pass

@@ -15,7 +15,7 @@ from borsa_istanbul_handlers.bist_order_reader import BistOrderReader
 from framework.l3_limit_order_book import L3LimitOrderMultiBook
 from framework.pipeline import Pipeline
 
-from bist_pairs_trading_strategy import BistPairsTradingStrategy
+from full_book_bist_pairs_trading_strategy import FullBookBistPairsTradingStrategy
 
 
 def getLimitOrderFileName(dateInDatetime):
@@ -27,13 +27,12 @@ def runBist50PairsTrading(limitOrderFilesDir, date, params):
     print (f"Running algo for limit order file: {limitOrderFileName}")
     limitOrderBook = L3LimitOrderMultiBook()
     mdReader = BistOrderReader(limitOrderFileName, limitOrderBook)
-    tradingAlgo = BistPairsTradingStrategy(limitOrderBook, params)
+    tradingAlgo = FullBookBistPairsTradingStrategy(limitOrderBook, params)
     backtesterPipeline = Pipeline([mdReader,[limitOrderBook,tradingAlgo]])
+    
     
     backtesterPipeline.start()
     
-    return tradingAlgo.getPricesDataFrame(), tradingAlgo.getPercentChangesDataFrame()
-
 
 if len(sys.argv) < 3:
     print ("Usage: bist50_pairs_trading_backtester.py <limitOrderFilesDir> <run date Y-m-d>")
@@ -45,17 +44,14 @@ runDateString = sys.argv[2]
 runDate = datetime.datetime.strptime(runDateString, '%Y-%m-%d')
 
 parameters = {}
-parameters["exchange_open_time"] = datetime.time(10,0,0)
-parameters["exchange_close_time"] = datetime.time(18,0,0)
+parameters["exchange_open_time"] = datetime.time(10,15,0)
+parameters["exchange_close_time"] = datetime.time(17,45,0)
+parameters["trigger_interval_seconds"] = 15
+# parameters["threshold"] = 0.2333543059856918/2
+parameters["threshold"] = 0
 
 print (f"Running strategy for day: {runDate}")    
-allPricesDataframe,allPriceChangesDataframe = runBist50PairsTrading(limitOrderFilesDir, runDate, parameters)
-
-print ("Prices: ")
-print (allPricesDataframe)
-
-dataFrameCsvFile = f"{runDateString}_interval_prices.csv"
-allPricesDataframe.to_csv(dataFrameCsvFile)
+runBist50PairsTrading(limitOrderFilesDir, runDate, parameters)
 
 
 
