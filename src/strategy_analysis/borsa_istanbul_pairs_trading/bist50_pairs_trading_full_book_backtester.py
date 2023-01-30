@@ -40,8 +40,10 @@ if len(sys.argv) < 3:
 
 
 limitOrderFilesDir = sys.argv[1]
-runDateString = sys.argv[2]
-runDate = datetime.datetime.strptime(runDateString, '%Y-%m-%d')
+startDateString = sys.argv[2]
+endDateString = sys.argv[3]
+startDate = datetime.datetime.strptime(startDateString, '%Y-%m-%d')
+endDate = datetime.datetime.strptime(endDateString, '%Y-%m-%d')
 
 parameters = {}
 parameters["exchange_open_time"] = datetime.time(10,15,0)
@@ -50,8 +52,14 @@ parameters["trigger_interval_seconds"] = 15
 # parameters["threshold"] = 0.2333543059856918/2
 parameters["threshold"] = 0
 
-print (f"Running strategy for day: {runDate}")    
-runBist50PairsTrading(limitOrderFilesDir, runDate, parameters)
+runDate = startDate
+while runDate != endDate:
+    print (f"Running strategy for day: {runDate}")    
+    try:
+        runBist50PairsTrading(limitOrderFilesDir, runDate, parameters)
+    except FileNotFoundError:
+        print (f"No trading on {runDate}")
+    runDate += datetime.timedelta(days=1)
 
 
 
