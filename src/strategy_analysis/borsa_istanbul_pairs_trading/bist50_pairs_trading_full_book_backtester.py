@@ -16,6 +16,7 @@ from framework.l3_limit_order_book import L3LimitOrderMultiBook
 from framework.pipeline import Pipeline
 
 from full_book_bist_pairs_trading_strategy import FullBookBistPairsTradingStrategy
+from full_book_bist_pairs_trading_strategy_just_mid import FullBookBistPairsTradingStrategyJustMid
 
 
 def getLimitOrderFileName(dateInDatetime):
@@ -27,11 +28,16 @@ def runBist50PairsTrading(limitOrderFilesDir, date, params):
     print (f"Running algo for limit order file: {limitOrderFileName}")
     limitOrderBook = L3LimitOrderMultiBook()
     mdReader = BistOrderReader(limitOrderFileName, limitOrderBook)
-    tradingAlgo = FullBookBistPairsTradingStrategy(limitOrderBook, params)
+    # tradingAlgo = FullBookBistPairsTradingStrategy(limitOrderBook, params)
+    tradingAlgo = FullBookBistPairsTradingStrategyJustMid(limitOrderBook, params)
     backtesterPipeline = Pipeline([mdReader,[limitOrderBook,tradingAlgo]])
     
-    
+    # try:
     backtesterPipeline.start()
+    # except:
+    #     pass
+
+    return tradingAlgo.totalReturn
     
 
 if len(sys.argv) < 3:
@@ -49,17 +55,22 @@ parameters = {}
 parameters["exchange_open_time"] = datetime.time(10,15,0)
 parameters["exchange_close_time"] = datetime.time(17,45,0)
 parameters["trigger_interval_seconds"] = 15
-# parameters["threshold"] = 0.2333543059856918/2
-parameters["threshold"] = 0
+parameters["threshold"] = 0.2333543059856918/2
+# parameters["threshold"] = 0
 
 runDate = startDate
+totalReturn = 1
 while runDate != endDate:
     print (f"Running strategy for day: {runDate}")    
     try:
-        runBist50PairsTrading(limitOrderFilesDir, runDate, parameters)
+        thisDayReturn = runBist50PairsTrading(limitOrderFilesDir, runDate, parameters)
+        print (f"Return for {runDate}: {thisDayReturn}")
+        totalReturn *= thisDayReturn
     except FileNotFoundError:
         print (f"No trading on {runDate}")
     runDate += datetime.timedelta(days=1)
+
+print (f"Total return is: {totalReturn}")
 
 
 
