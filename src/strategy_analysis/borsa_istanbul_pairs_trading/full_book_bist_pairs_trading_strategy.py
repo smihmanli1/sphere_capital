@@ -63,10 +63,7 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         currentDiff = self.krdmdBestBid - self.krdmaBestAsk - self.minSubtractedPart
         self.maxDiff = max(self.maxDiff, currentDiff)
         print (f"Max diff so far: {self.maxDiff}")
-        #TODO: Need to trt different thresholds here. 0 cannot be the only threshold.
-        #      We should try different thresholds and get rid of the "check every 15 seconds" thing.
-        #      We should continously check.
-        #      Of course the threshold would depend on the pair we are trading.
+        #TODO: Try different thrsholds for different pairs
         if currentDiff > 0.05:
             print (f"Trading signal -- Event: {event}, Event time: {eventTime}")
             print (f"KRDMD_bid - KRDMA_ask= {self.krdmdBestBid - self.krdmaBestAsk}")
