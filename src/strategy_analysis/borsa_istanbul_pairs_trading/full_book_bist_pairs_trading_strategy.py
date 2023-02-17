@@ -16,11 +16,6 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         self.eventCount = 0
         self.parameters = parameters
         
-        self.krdmaFirstBid = None
-        self.krdmaFirstAsk = None
-        self.krdmdFirstBid = None
-        self.krdmdFirstAsk = None
-
         self.lastTriggerTime = datetime.datetime(1970,1,1)
         self.krdmaAskPercentChange = None
         self.krdmdBidPercentChange = None
@@ -33,68 +28,60 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
 
         #Conds
         self.threshold = parameters["threshold"]/100
-        self.triggerIntervalSeconds = parameters["trigger_interval_seconds"] 
+        self.triggerIntervalSeconds = parameters["trigger_interval_seconds"]
+
+        self.maxDiff = -1000000000
+        self.minSubtractedPart = 1000000000
         
     
     def checkPriceAndTrigger(self, event, eventTime):
         
-        #Trigger only every set amount of seconds
-        secondsSinceLastTrigger = (eventTime - self.lastTriggerTime).total_seconds()
-        if secondsSinceLastTrigger < self.triggerIntervalSeconds:
-            return
-
-        # if self.krdmaAskPercentChange is None or self.krdmdBidPercentChange is None:
-        #     return
 
         if self.krdmdBestBid is None or\
-           self.krdmaBestAsk is None or\
-           self.krdmaFirstBid is None or\
-           self.krdmdFirstAsk is None:
+           self.krdmdBestAsk is None or\
+           self.krdmaBestBid is None or\
+           self.krdmaBestAsk is None:
            return
 
-        self.lastTriggerTime = eventTime
+        # Update the min subtracted part only if it is between 10:15am-10:20am. After 10:20am, we start actual trading.
+        if eventTime.time() < datetime.time(10,20,0):
+            self.minSubtractedPart = min(self.minSubtractedPart, self.krdmdBestAsk - self.krdmaBestBid)
+            return
 
-        # if self.krdmdBidPercentChange - self.krdmaAskPercentChange > self.threshold:
-        #     print (f"Trading signal -- Event: {event}, Event time: {eventTime}")
-        #     print (f"KRDMD_bid - KRDMA_ask= {self.krdmdBestBid - self.krdmaBestAsk}")
-        #     print (f"Firsf_KRDMA_bid - First_KRDMD_ask= {self.krdmaFirstBid - self.krdmdFirstAsk}")
+        # Trigger only every set amount of seconds
+        # secondsSinceLastTrigger = (eventTime - self.lastTriggerTime).total_seconds()
+        # if secondsSinceLastTrigger < self.triggerIntervalSeconds:
+        #     return
+        # self.lastTriggerTime = eventTime 
+        
+        if self.minSubtractedPart == 1000000000:
+            print ("Critical: minSubtractedPart is never set")
 
-        if self.krdmdBestBid - self.krdmaBestAsk + self.krdmaFirstBid - self.krdmdFirstAsk > 0:
+       
+        #ORIGINAL FOERMULA FOR CURRENT DIFF:
+        # self.krdmdBestBid - self.krdmaBestAsk + self.krdmaFirstBid - self.krdmdFirstAsk
+        currentDiff = self.krdmdBestBid - self.krdmaBestAsk - self.minSubtractedPart
+        self.maxDiff = max(self.maxDiff, currentDiff)
+        print (f"Max diff so far: {self.maxDiff}")
+        #TODO: Need to trt different thresholds here. 0 cannot be the only threshold.
+        #      We should try different thresholds and get rid of the "check every 15 seconds" thing.
+        #      We should continously check.
+        #      Of course the threshold would depend on the pair we are trading.
+        if currentDiff > 0.05:
             print (f"Trading signal -- Event: {event}, Event time: {eventTime}")
             print (f"KRDMD_bid - KRDMA_ask= {self.krdmdBestBid - self.krdmaBestAsk}")
-            print (f"Firsf_KRDMA_bid - First_KRDMD_ask= {self.krdmaFirstBid - self.krdmdFirstAsk}")
+            print (f"Best min subtracted part= {self.minSubtractedPart}")
 
     def processKrdma(self, event, eventTime):
-        if self.krdmaFirstBid is None:
-            self.krdmaFirstBid = self.lob.bestBid(event.symbol).price        
-
-        if self.krdmaFirstAsk is None:
-            self.krdmaFirstAsk = self.lob.bestAsk(event.symbol).price
-
         self.krdmaBestBid = self.lob.bestBid(event.symbol).price
         self.krdmaBestAsk = self.lob.bestAsk(event.symbol).price
-
-        
-            
-        self.krdmaAskPercentChange = (self.lob.bestAsk(event.symbol).price - self.krdmaFirstAsk) / self.krdmaFirstAsk
         self.checkPriceAndTrigger(event, eventTime)
         
     def processKrdmd(self, event, eventTime):
-        if self.krdmdFirstBid is None:
-            self.krdmdFirstBid = self.lob.bestBid(event.symbol).price
-        
-        if self.krdmdFirstAsk is None:
-            self.krdmdFirstAsk = self.lob.bestAsk(event.symbol).price
-
         self.krdmdBestBid = self.lob.bestBid(event.symbol).price
         self.krdmdBestAsk = self.lob.bestAsk(event.symbol).price
-
-        self.krdmdBidPercentChange = (self.lob.bestBid(event.symbol).price - self.krdmdFirstBid) / self.krdmdFirstBid
         self.checkPriceAndTrigger(event, eventTime)
         
-
-
-
     def accept(self, event):
         
         #TODO: We should not trade if our best bid/ask does not match their best bid ask. (For this 
