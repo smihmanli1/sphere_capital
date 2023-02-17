@@ -32,8 +32,21 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
 
         self.maxDiff = -1000000000
         self.minSubtractedPart = 1000000000
+
+        self.bought = False
+        self.currentProfit = 0
         
     
+    def openPosition(self):
+        #Short KRDMD, Long KRDMA
+        self.bought = True
+        self.currentProfit += self.krdmdBestBid - self.krdmaBestAsk
+
+    def closePosition(self):
+        #Long KRDMD, Short KRDMA
+        self.bought = False
+        self.currentProfit += self.krdmaBestBid - self.krdmdBestAsk
+
     def checkPriceAndTrigger(self, event, eventTime):
         
 
@@ -62,13 +75,17 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         # self.krdmdBestBid - self.krdmaBestAsk + self.krdmaFirstBid - self.krdmdFirstAsk
         currentDiff = self.krdmdBestBid - self.krdmaBestAsk - self.minSubtractedPart
         self.maxDiff = max(self.maxDiff, currentDiff)
-        print (f"Max diff so far: {self.maxDiff}")
+        # print (f"Max diff so far: {self.maxDiff}")
         #TODO: Try different thrsholds for different pairs
-        if currentDiff > 0.05:
-            print (f"Trading signal -- Event: {event}, Event time: {eventTime}")
-            print (f"KRDMD_bid - KRDMA_ask= {self.krdmdBestBid - self.krdmaBestAsk}")
-            print (f"Best min subtracted part= {self.minSubtractedPart}")
+        if currentDiff > 0.05 and not self.bought:
+            #TODOL Should keep opening position as more volume is available
+            self.openPosition()
+            print (f"Opened position with currentDiff: {currentDiff}")
 
+        if currentDiff <= 0 and self.bought:
+            self.closePosition()
+            print (f"Closed position with profit: {self.currentProfit}")
+         
     def processKrdma(self, event, eventTime):
         self.krdmaBestBid = self.lob.bestBid(event.symbol).price
         self.krdmaBestAsk = self.lob.bestAsk(event.symbol).price
@@ -80,9 +97,6 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         self.checkPriceAndTrigger(event, eventTime)
         
     def accept(self, event):
-        
-        #TODO: We should not trade if our best bid/ask does not match their best bid ask. (For this 
-        # we should keep a copy of the book that is not manipulated by our orders)
         
         #This is where the algo takes action
         eventTime = datetime.datetime.utcfromtimestamp(event.timestamp / MILLIS_IN_A_SEC)
@@ -97,6 +111,8 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
             return
         
         if currentTime > self.parameters["exchange_close_time"]:
+            if self.bought:
+                closePosition()
             return
 
         # if currentTime > datetime.time(10,15,0):
