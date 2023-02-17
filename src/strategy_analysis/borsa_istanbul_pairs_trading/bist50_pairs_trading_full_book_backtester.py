@@ -37,7 +37,7 @@ def runBist50PairsTrading(limitOrderFilesDir, date, params):
     # except:
     #     pass
 
-    return tradingAlgo.maxDiff
+    return tradingAlgo.maxDiff, tradingAlgo.currentProfit
     
 
 if len(sys.argv) < 3:
@@ -63,8 +63,9 @@ runDate = startDate
 while runDate != endDate:
     print (f"Running strategy for day: {runDate}")    
     try:
-        maxDiff = runBist50PairsTrading(limitOrderFilesDir, runDate, parameters)
+        maxDiff, totalProfit = runBist50PairsTrading(limitOrderFilesDir, runDate, parameters)
         print (f"Max diff for {runDate}: {maxDiff}")
+        print (f"Total profit for {runDate}: {totalProfit}")
 
     except FileNotFoundError:
         print (f"No trading on {runDate}")

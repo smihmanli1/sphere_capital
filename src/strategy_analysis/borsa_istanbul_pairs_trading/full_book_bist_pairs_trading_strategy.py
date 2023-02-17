@@ -5,6 +5,7 @@ import pandas as pd
 
 from framework.pipe import Pipe
 from framework.trading_algo import TradingAlgo
+from framework.market_order import MarketOrder
 
 MILLIS_IN_A_SEC = 1000
 
@@ -35,17 +36,37 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
 
         self.bought = False
         self.currentProfit = 0
+        self.openAmount = 0
+        self.orderId = 1
         
     
     def openPosition(self):
         #Short KRDMD, Long KRDMA
+        krdmaBestAskSize = self.lob.bestAsk("KRDMA.E").size
+        krdmdBestBidSize = self.lob.bestBid("KRDMD.E").size
+        tradedAmount = min(krdmaBestAskSize, krdmdBestBidSize)
+        self.sendBuyOrder("KRDMA.E", tradedAmount)
+        self.sendSellOrder("KRDMD.E", tradedAmount)
+        self.openAmount = tradedAmount
         self.bought = True
-        self.currentProfit += self.krdmdBestBid - self.krdmaBestAsk
+        self.currentProfit += tradedAmount * (self.krdmdBestBid - self.krdmaBestAsk)
 
     def closePosition(self):
         #Long KRDMD, Short KRDMA
+        self.sendSellOrder("KRDMA.E", self.openAmount)
+        self.sendBuyOrder("KRDMD.E", self.openAmount)
         self.bought = False
-        self.currentProfit += self.krdmaBestBid - self.krdmdBestAsk
+        self.currentProfit += self.openAmount * (self.krdmaBestBid - self.krdmdBestAsk)
+
+    def sendBuyOrder(self, ticker, size):
+        self.orderId += 1 
+        marketOrder = MarketOrder(symbol=ticker, orderId=self.orderId, sell=False, size=size)
+        self.lob.applyMarketOrder(marketOrder)
+
+    def sendSellOrder(self, ticker, size):
+        self.orderId += 1 
+        marketOrder = MarketOrder(symbol=ticker, orderId=self.orderId, sell=True, size=size)
+        self.lob.applyMarketOrder(marketOrder)
 
     def checkPriceAndTrigger(self, event, eventTime):
         
@@ -77,8 +98,7 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         self.maxDiff = max(self.maxDiff, currentDiff)
         # print (f"Max diff so far: {self.maxDiff}")
         #TODO: Try different thrsholds for different pairs
-        if currentDiff > 0.05 and not self.bought:
-            #TODOL Should keep opening position as more volume is available
+        while currentDiff > 0.05:
             self.openPosition()
             print (f"Opened position with currentDiff: {currentDiff}")
 
