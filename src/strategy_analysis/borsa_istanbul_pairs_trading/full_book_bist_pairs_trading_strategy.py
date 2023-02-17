@@ -40,6 +40,12 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         self.orderId = 1
         
     
+    def updateBests(self):
+        self.krdmaBestBid = self.lob.bestBid("KRDMA.E").price
+        self.krdmaBestAsk = self.lob.bestAsk("KRDMA.E").price
+        self.krdmdBestBid = self.lob.bestBid("KRDMD.E").price
+        self.krdmdBestAsk = self.lob.bestAsk("KRDMD.E").price
+
     def openPosition(self):
         #Short KRDMD, Long KRDMA
         krdmaBestAskSize = self.lob.bestAsk("KRDMA.E").size
@@ -51,12 +57,16 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         self.bought = True
         self.currentProfit += tradedAmount * (self.krdmdBestBid - self.krdmaBestAsk)
 
+        self.updateBests()
+
     def closePosition(self):
         #Long KRDMD, Short KRDMA
         self.sendSellOrder("KRDMA.E", self.openAmount)
         self.sendBuyOrder("KRDMD.E", self.openAmount)
         self.bought = False
         self.currentProfit += self.openAmount * (self.krdmaBestBid - self.krdmdBestAsk)
+
+        self.updateBests()
 
     def sendBuyOrder(self, ticker, size):
         self.orderId += 1 
@@ -101,6 +111,7 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         while currentDiff > 0.05:
             self.openPosition()
             print (f"Opened position with currentDiff: {currentDiff}")
+            currentDiff = self.krdmdBestBid - self.krdmaBestAsk - self.minSubtractedPart
 
         if currentDiff <= 0 and self.bought:
             self.closePosition()
