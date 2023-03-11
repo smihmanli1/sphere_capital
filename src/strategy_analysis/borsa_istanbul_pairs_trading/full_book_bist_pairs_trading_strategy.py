@@ -100,6 +100,7 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         
         if self.minSubtractedPart == 1000000000:
             print ("Critical: minSubtractedPart is never set")
+            exit(1)
 
        
         #ORIGINAL FOERMULA FOR CURRENT DIFF:
