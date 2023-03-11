@@ -37,7 +37,7 @@ def runBist50PairsTrading(limitOrderFilesDir, date, params):
     # except:
     #     pass
 
-    return tradingAlgo.maxDiff, tradingAlgo.currentProfit
+    return tradingAlgo.maxDiff, tradingAlgo.currentProfit, tradingAlgo.openAmount
     
 
 if len(sys.argv) < 3:
@@ -53,7 +53,7 @@ endDate = datetime.datetime.strptime(endDateString, '%Y-%m-%d')
 
 parameters = {}
 parameters["exchange_open_time"] = datetime.time(10,15,0)
-parameters["exchange_close_time"] = datetime.time(17,45,0)
+parameters["exchange_close_time"] = datetime.time(17,59,0)
 parameters["trigger_interval_seconds"] = 15
 parameters["threshold"] = 0
 # parameters["threshold"] = 0
@@ -63,9 +63,10 @@ runDate = startDate
 while runDate != endDate:
     print (f"Running strategy for day: {runDate}")    
     try:
-        maxDiff, totalProfit = runBist50PairsTrading(limitOrderFilesDir, runDate, parameters)
+        maxDiff, totalProfit, openAmount = runBist50PairsTrading(limitOrderFilesDir, runDate, parameters)
         print (f"Max diff for {runDate}: {maxDiff}")
         print (f"Total profit for {runDate}: {totalProfit}")
+        print (f"Open amount in each share: {runDate}: {openAmount}")
 
     except FileNotFoundError:
         print (f"No trading on {runDate}")

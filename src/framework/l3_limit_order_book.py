@@ -128,6 +128,24 @@ class L3LimitOrderMultiBook(Pipe):
     def applyMarketOrder(self, marketOrder):
         self.limitOrderBooks[marketOrder.symbol].applyMarketOrder(marketOrder)
 
+    def cumulativeVolumeAtBidPriceLevel(self, ticker, priceLevel):
+        return self.limitOrderBooks[ticker].cumulativeVolumeAtPriceLevel(priceLevel, Side.BID)
+
+    def cumulativeVolumeAtAskPriceLevel(self, ticker, priceLevel):
+        return self.limitOrderBooks[ticker].cumulativeVolumeAtPriceLevel(priceLevel, Side.ASK)
+
+    def dumpBook(self, ticker, numLevels):
+        print (f"{ticker} Book ({numLevels} levels): ")
+        askPriceLevels = self.getAskPriceLevels(ticker, numLevels)
+        for priceLevel in reversed(askPriceLevels):
+            volumeAtPriceLevel = self.cumulativeVolumeAtAskPriceLevel(ticker, priceLevel)
+            print (f"Price: {priceLevel}, Size: {volumeAtPriceLevel}")
+        print ("----")
+        bidPriceLevels = self.getBidPriceLevels(ticker, numLevels)
+        for priceLevel in bidPriceLevels:
+            volumeAtPriceLevel = self.cumulativeVolumeAtBidPriceLevel(ticker, priceLevel)
+            print (f"Price: {priceLevel}, Size: {volumeAtPriceLevel}")
+
 class L3LimitOrderBook(Pipe):
 
     def __init__(self, allowCrossedBook = False):
