@@ -18,6 +18,5 @@ do
             echo "${runCommand} ${buyThreshold} ${sellThreshold} ${positionLimit} > result_buy_t${buyThreshold}_sell_t${sellThreshold}_pos_limit${positionLimit}.log&"
             ${runCommand} ${buyThreshold} ${sellThreshold} ${positionLimit} > result_buy_t${buyThreshold}_sell_t${sellThreshold}_pos_limit${positionLimit}.log&
         done
-        exit
     done
 done
