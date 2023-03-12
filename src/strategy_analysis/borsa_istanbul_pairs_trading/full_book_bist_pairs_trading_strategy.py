@@ -40,6 +40,8 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
 
         self.allSubtractedPartsSoFar = []
         self.prevSubtractedPart = 0
+
+        print (f"Parameters: {parameters}")
         
     
     def updateBests(self): 
