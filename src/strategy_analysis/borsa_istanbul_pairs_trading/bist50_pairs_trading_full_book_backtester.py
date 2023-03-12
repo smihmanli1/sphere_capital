@@ -53,7 +53,7 @@ endDate = datetime.datetime.strptime(endDateString, '%Y-%m-%d')
 
 parameters = {}
 parameters["exchange_open_time"] = datetime.time(10,0,0)
-parameters["algo_start_time"] = datetime.time(10,15,0)
+parameters["algo_start_time"] = datetime.time(10,5,0)
 parameters["algo_end_time"] = datetime.time(17,58,0) #Giving it two minutes to unwind.
 parameters["exchange_close_time"] = datetime.time(18,0,0)
 parameters["trigger_interval_seconds"] = 15

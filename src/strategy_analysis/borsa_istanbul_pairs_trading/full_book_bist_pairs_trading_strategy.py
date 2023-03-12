@@ -2,6 +2,7 @@
 from collections import defaultdict
 import datetime
 import pandas as pd
+import numpy as np
 
 from framework.pipe import Pipe
 from framework.trading_algo import TradingAlgo
@@ -29,13 +30,17 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         self.triggerIntervalSeconds = parameters["trigger_interval_seconds"] #TODO: See if this is necessary
 
         self.maxDiff = -1000000000
-        self.minSubtractedPart = 1000000000
+        self.anchorSubtractedPart = None
+        self.prevSubtractedPart = None
 
         self.currentProfit = 0
         self.openAmount = 0
         self.orderId = 1
 
         self.upperLimitOnOpenAmount = 100000
+
+        self.allSubtractedPartsSoFar = []
+        self.prevSubtractedPart = 0
         
     
     def updateBests(self): 
@@ -140,25 +145,20 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         if not self.bestsPresent():
            return
 
-        # Update the min subtracted part only if it is between 10:15am-10:20am. After 10:20am, we start actual trading.
+        # Note that if one of the below prices changed, subtraced part would have changed.
+        # Also not that both can't change on the same checkPriceAndTrigger call
         subtracatedPart = self.krdmdBestAsk.price - self.krdmaBestBid.price
-        if eventTime.time() < datetime.time(10,20,0):
-            newSubtractedPart = min(self.minSubtractedPart, subtracatedPart)
-            if newSubtractedPart != self.minSubtractedPart:
-                print (f"New min subtracted part: {newSubtractedPart}")
-            self.minSubtractedPart = newSubtractedPart
-            return
-
-        # Trigger only every set amount of seconds
-        # secondsSinceLastTrigger = (eventTime - self.lastTriggerTime).total_seconds()
-        # if secondsSinceLastTrigger < self.triggerIntervalSeconds:
-        #     return
-        # self.lastTriggerTime = eventTime 
+        if subtracatedPart != self.prevSubtractedPart:
+            self.prevSubtractedPart = subtracatedPart
+            self.allSubtractedPartsSoFar.append(subtracatedPart)
+            if self.openAmount == 0:
+                potentialNewAnchor = np.median(self.allSubtractedPartsSoFar)
+                if self.anchorSubtractedPart != potentialNewAnchor:
+                    print (f"Anchor subtracted part updated to: {potentialNewAnchor}")
+                self.anchorSubtractedPart = potentialNewAnchor
         
-        if self.minSubtractedPart == 1000000000:
-            print ("Critical: minSubtractedPart is never set")
-            exit(1)
-
+        if eventTime.time() < datetime.time(11,0,0):
+            return
 
         # It's time to unwind if we have any open positions
         if eventTime.time() > self.parameters["algo_end_time"]:
@@ -170,16 +170,16 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
 
         #ORIGINAL FOERMULA FOR CURRENT DIFF:
         # self.krdmdBestBid - self.krdmaBestAsk + self.krdmaFirstBid - self.krdmdFirstAsk
-        currentDiff = self.krdmdBestBid.price - self.krdmaBestAsk.price - self.minSubtractedPart
+        currentDiff = self.krdmdBestBid.price - self.krdmaBestAsk.price - self.anchorSubtractedPart
         self.maxDiff = max(self.maxDiff, currentDiff)
         #TODO: Try different thrsholds for different pairs
         while currentDiff > 0.05 and self.openAmount < self.upperLimitOnOpenAmount:
             self.openPosition() #This call updates the bests
             print (f"Opened position with currentDiff: {currentDiff}")
-            currentDiff = self.krdmdBestBid.price - self.krdmaBestAsk.price - self.minSubtractedPart
+            currentDiff = self.krdmdBestBid.price - self.krdmaBestAsk.price - self.anchorSubtractedPart
             print (f"Current open positions in each of KRDMD and KRDMA: {self.openAmount}")
         
-        while subtracatedPart <= self.minSubtractedPart and self.openAmount > 0:
+        while subtracatedPart <= self.anchorSubtractedPart and self.openAmount > 0:
             self.closePosition() #This call updates the bests
             print (f"Closed position. Total profit: {self.currentProfit}")
             print (f"Current open positions in each of KRDMD and KRDMA: {self.openAmount}")
