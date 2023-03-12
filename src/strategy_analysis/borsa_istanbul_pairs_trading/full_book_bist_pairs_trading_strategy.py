@@ -250,7 +250,11 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
                     self.logProfitOfHypotheticalUnwind(openAmountRatio)
             if self.bestsPresent():
                 subtracatedPart = self.krdmdBestAsk.price - self.krdmaBestBid.price
+                currentDiff = self.krdmdBestBid.price - self.krdmaBestAsk.price - self.anchorSubtractedPart
+                print (f"Current diff now: {currentDiff}")
+                print (f"Anchor subtracted part: {self.anchorSubtractedPart}")
                 print (f"Subtracted part now: {subtracatedPart}")
+                
             print ()
             print ()
             print ()
