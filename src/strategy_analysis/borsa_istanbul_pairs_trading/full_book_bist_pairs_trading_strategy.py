@@ -177,6 +177,23 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         self.krdmdBestAsk = self.lob.bestAsk(event.symbol).price
         self.checkPriceAndTrigger(event, eventTime)
         
+    def profitFromUnwindingEverything(self):
+        
+        try:
+            #Unwind KRDMA by shorting it
+            profitFromKrdma = self.log.cumulativeValueAtBidNumShares("KRDMA.E", self.openAmount)
+
+            #Unwind KRDMD by longing it
+            profitFromKrdmd = -self.log.cumulativeValueAtAskNumShares("KRDMD.E", self.openAmount)
+        except Exception:
+            print ("Cannot unwind everything due to lack of liquidity")
+            return 0
+
+        return profitFromKrdma + profitFromKrdmd
+
+    def cumulativeValueAtAskNumShares(self, ticker, numShares):
+        return self.limitOrderBooks[ticker].cumulativeValueAtNumShares(numShares, Side.ASK)
+
     def accept(self, event):
         
         #This is where the algo takes action
@@ -190,6 +207,10 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
             self.lob.dumpBook("KRDMD.E", 5)
             print (f"Current open position in each stock: {self.openAmount}")
             print (f"Current total profit: {self.currentProfit}")
+            print (f"Today's profit if unwinded everything now: {self.currentProfit + self.profitFromUnwindingEverything()}")
+            print ()
+            print ()
+            print ()
 
 
         currentTime = eventTime.time()
@@ -198,7 +219,8 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         
         if currentTime > self.parameters["exchange_close_time"]:
             if self.openAmount > 0:
-                closePosition()
+                self.currentProfit += self.profitFromUnwindingEverything()
+                self.openAmount = 0
             return
 
         # if currentTime > datetime.time(10,15,0):
