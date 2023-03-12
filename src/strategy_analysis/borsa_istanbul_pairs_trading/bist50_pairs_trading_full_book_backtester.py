@@ -57,8 +57,16 @@ parameters["algo_start_time"] = datetime.time(10,5,0)
 parameters["algo_end_time"] = datetime.time(17,58,0) #Giving it two minutes to unwind.
 parameters["exchange_close_time"] = datetime.time(18,0,0)
 parameters["trigger_interval_seconds"] = 15
-parameters["threshold"] = 0
-# parameters["threshold"] = 0
+
+parameters["buy_threshold"] = 0.05
+parameters["sell_threshold"] = 0
+parameters["upper_limit_on_position"] = 100000
+
+if len(sys.argv) > 4:
+    parameters["buy_threshold"] = sys.argv[4]
+    parameters["sell_threshold"] = sys.argv[5]
+    parameters["upper_limit_on_position"] = sys.argv[6]
+
 
 runDate = startDate
 

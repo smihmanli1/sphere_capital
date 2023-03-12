@@ -3,6 +3,7 @@ from collections import defaultdict
 import datetime
 import pandas as pd
 import numpy as np
+import math
 
 from framework.pipe import Pipe
 from framework.trading_algo import TradingAlgo
@@ -27,8 +28,6 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         self.krdmdBestAsk = None
 
         #Conds
-        self.triggerIntervalSeconds = parameters["trigger_interval_seconds"] #TODO: See if this is necessary
-
         self.maxDiff = -1000000000
         self.anchorSubtractedPart = None
         self.prevSubtractedPart = None
@@ -37,7 +36,7 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         self.openAmount = 0
         self.orderId = 1
 
-        self.upperLimitOnOpenAmount = 100000
+        self.upperLimitOnOpenAmount = self.parameters["upper_limit_on_position"]
 
         self.allSubtractedPartsSoFar = []
         self.prevSubtractedPart = 0
@@ -173,13 +172,13 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         currentDiff = self.krdmdBestBid.price - self.krdmaBestAsk.price - self.anchorSubtractedPart
         self.maxDiff = max(self.maxDiff, currentDiff)
         #TODO: Try different thrsholds for different pairs
-        while currentDiff > 0.05 and self.openAmount < self.upperLimitOnOpenAmount:
+        while currentDiff > self.parameters["buy_threshold"] and self.openAmount < self.upperLimitOnOpenAmount:
             self.openPosition() #This call updates the bests
             print (f"Opened position with currentDiff: {currentDiff}")
             currentDiff = self.krdmdBestBid.price - self.krdmaBestAsk.price - self.anchorSubtractedPart
             print (f"Current open positions in each of KRDMD and KRDMA: {self.openAmount}")
         
-        while subtracatedPart <= self.anchorSubtractedPart and self.openAmount > 0:
+        while subtracatedPart <= self.anchorSubtractedPart - self.parameters["sell_threshold"] and self.openAmount > 0:
             self.closePosition() #This call updates the bests
             print (f"Closed position. Total profit: {self.currentProfit}")
             print (f"Current open positions in each of KRDMD and KRDMA: {self.openAmount}")
@@ -195,19 +194,29 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         self.updateBests()
         self.checkPriceAndTrigger(event, eventTime)
         
-    def profitFromUnwindingEverything(self):
+    def profitFromUnwindingAmount(self, amount):
             
         #Unwind KRDMA by shorting it
-        profitFromKrdma, krdmaRemainingToUnwind = self.lob.cumulativeValueAtBidNumShares("KRDMA.E", self.openAmount)
+        profitFromKrdma, krdmaRemainingToUnwind = self.lob.cumulativeValueAtBidNumShares("KRDMA.E", amount)
 
         #Unwind KRDMD by longing it
-        profitFromKrdmd, krdmdRemainingToUnwind = self.lob.cumulativeValueAtAskNumShares("KRDMD.E", self.openAmount)
+        profitFromKrdmd, krdmdRemainingToUnwind = self.lob.cumulativeValueAtAskNumShares("KRDMD.E", amount)
         profitFromKrdmd = -profitFromKrdmd #Because we are longing KRDMD
         
         return profitFromKrdma + profitFromKrdmd, krdmaRemainingToUnwind, krdmdRemainingToUnwind
 
     def cumulativeValueAtAskNumShares(self, ticker, numShares):
         return self.limitOrderBooks[ticker].cumulativeValueAtNumShares(numShares, Side.ASK)
+
+
+    def logProfitOfHypotheticalUnwind(self, openAmountRatio):
+        percentage = 100 * openAmountRatio
+        amount = math.floor(openAmountRatio * self.openAmount)
+        profitFromUnwinding, krdmaRemainingToUnwind, krdmdRemainingToUnwind  = self.profitFromUnwindingAmount(amount)
+        if krdmaRemainingToUnwind == 0 and krdmdRemainingToUnwind == 0:
+            print (f"Today's profit if unwinded {percentage}% of everything now: {self.currentProfit + profitFromUnwinding}")
+        else:
+            print (f"WARNING: Cannot unwind {percentage}% of everything now. KRDMA remaining: {krdmaRemainingToUnwind}, KRDMD remaining: {krdmdRemainingToUnwind}")
 
     def accept(self, event):
         
@@ -223,11 +232,8 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
             print (f"Current open position in each stock: {self.openAmount}")
             print (f"Current total profit: {self.currentProfit}")
             if self.openAmount > 0:
-                profitFromUnwinding, krdmaRemainingToUnwind, krdmdRemainingToUnwind  = self.profitFromUnwindingEverything()
-                if krdmaRemainingToUnwind == 0 and krdmdRemainingToUnwind == 0:
-                    print (f"Today's profit if unwinded everything now: {self.currentProfit + profitFromUnwinding}")
-                else:
-                    print (f"WARNING: Cannot unwind everything now. KRDMA remaining: {krdmaRemainingToUnwind}, KRDMD remaining: {krdmdRemainingToUnwind}")
+                for openAmountRatio in [0.25, 0.50, 0.75, 1.0]:
+                    self.logProfitOfHypotheticalUnwind(openAmountRatio)
             if self.bestsPresent():
                 subtracatedPart = self.krdmdBestAsk.price - self.krdmaBestBid.price
                 print (f"Subtracted part now: {subtracatedPart}")
