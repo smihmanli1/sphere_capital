@@ -323,11 +323,19 @@ class L3LimitOrderBook(Pipe):
             raise Exception("Unexpected order side for best quote in limit order book")
 
     def bestBid(self):
-        bestBidQuote = self.bids.peekitem(index=-1)
+        try:
+            bestBidQuote = self.bids.peekitem(index=-1)
+        except IndexError:
+            return None
+        
         return Quote(bestBidQuote[0], self._getSizeAtLevel(bestBidQuote[1]))
 
     def bestAsk(self):
-        bestAskQuote = self.asks.peekitem(index=0)
+        try:
+            bestAskQuote = self.asks.peekitem(index=0)
+        except IndexError:
+            return None
+        
         return Quote(bestAskQuote[0], self._getSizeAtLevel(bestAskQuote[1]))
 
     def spread(self):
@@ -393,10 +401,10 @@ class L3LimitOrderBook(Pipe):
             numSharesToUnwind -= totalSizeAtThisLevel
 
         if not foundEnoughSharesInBookToUnwind:
-            raise Exception("Not enough shares in book to unwind")
+            return cumulativeValue, numSharesToUnwind
             
         cumulativeValue += numSharesToUnwind * lastPriceLevel
-        return cumulativeValue
+        return cumulativeValue, 0
 
 
 

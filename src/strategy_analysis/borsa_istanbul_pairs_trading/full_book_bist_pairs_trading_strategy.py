@@ -38,24 +38,26 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         self.upperLimitOnOpenAmount = 100000
         
     
-    def updateBests(self):
-        self.krdmaBestBid = self.lob.bestBid("KRDMA.E").price
-        self.krdmaBestAsk = self.lob.bestAsk("KRDMA.E").price
-        self.krdmdBestBid = self.lob.bestBid("KRDMD.E").price
-        self.krdmdBestAsk = self.lob.bestAsk("KRDMD.E").price
+    def updateBests(self): 
+        self.krdmaBestBid = self.lob.bestBid("KRDMA.E")
+        self.krdmaBestAsk = self.lob.bestAsk("KRDMA.E")
+        self.krdmdBestBid = self.lob.bestBid("KRDMD.E")
+        self.krdmdBestAsk = self.lob.bestAsk("KRDMD.E")
 
     def openPosition(self):
         #Short KRDMD, Long KRDMA
-        krdmaBestAskSize = self.lob.bestAsk("KRDMA.E").size
-        krdmdBestBidSize = self.lob.bestBid("KRDMD.E").size
+        
+        if self.krdmaBestAsk is None or self.krdmdBestBid is None:
+            print ("CRITICAL: Book doesn't have liquidity when opening positions")
+            exit(1)
 
         print ("Opening position....")
         self.lob.dumpBook("KRDMA.E", 5)
         print()
         self.lob.dumpBook("KRDMD.E", 5)
 
-        print (f"KRDMA: best ask: {self.krdmaBestAsk}, best ask size: {krdmaBestAskSize}, KRDMD: best bid: {self.krdmdBestBid}, best bid size: {krdmdBestBidSize}")
-        tradedAmount = min(krdmaBestAskSize, krdmdBestBidSize)
+        print (f"KRDMA: best ask: {self.krdmaBestAsk.price}, best ask size: {self.krdmaBestAsk.size}, KRDMD: best bid: {self.krdmdBestBid.price}, best bid size: {self.krdmdBestBid.size}")
+        tradedAmount = min(self.krdmaBestAsk.size, self.krdmdBestBid.size)
         print (f"Traded amount: {tradedAmount}")
 
         if tradedAmount + self.openAmount > self.upperLimitOnOpenAmount:
@@ -73,23 +75,28 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
 
         print(f"Current open amount in one share: {self.openAmount}")
 
-        self.currentProfit += tradedAmount * (self.krdmdBestBid - self.krdmaBestAsk)
+        self.currentProfit += tradedAmount * (self.krdmdBestBid.price - self.krdmaBestAsk.price)
 
         self.updateBests()
 
     def closePosition(self):
         
         #Long KRDMD, Short KRDMA
-        krdmaBestBidSize = self.lob.bestBid("KRDMA.E").size
-        krdmdBestAskSize = self.lob.bestAsk("KRDMD.E").size
+        if self.krdmaBestBid is None or self.krdmdBestAsk is None:
+            #Don't expect this to happen because we close position in two places:
+            # 1. Intraday when prices move together. Don't expect to exhaust liquidity there.
+            # 2. End of day when unwinding all positions. In this case we call if bests are present before calling
+            #    this function.
+            print ("CRITICAL: Book doesn't have liquidity when opening positions")
+            exit(1)
 
         print ("Closing position....")
         self.lob.dumpBook("KRDMA.E", 5)
         print()
         self.lob.dumpBook("KRDMD.E", 5)
 
-        print (f"KRDMA: best bid: {self.krdmaBestBid}, best bid size: {krdmaBestBidSize}, KRDMD: best ask: {self.krdmdBestAsk}, best ask size: {krdmdBestAskSize}")
-        tradedAmount = min(krdmaBestBidSize, krdmdBestAskSize)
+        print (f"KRDMA: best bid: {self.krdmaBestBid.price}, best bid size: {self.krdmaBestBid.size}, KRDMD: best ask: {self.krdmdBestAsk.price}, best ask size: {self.krdmdBestAsk.size}")
+        tradedAmount = min(self.krdmaBestBid.size, self.krdmdBestAsk.size)
         print (f"Traded amount: {tradedAmount}")
 
         if tradedAmount > self.openAmount:
@@ -104,7 +111,7 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         #Long KRDMD, Short KRDMA
         self.sendSellOrder("KRDMA.E", tradedAmount)
         self.sendBuyOrder("KRDMD.E", tradedAmount)
-        profitFromThis = tradedAmount * (self.krdmaBestBid - self.krdmdBestAsk)
+        profitFromThis = tradedAmount * (self.krdmaBestBid.price - self.krdmdBestAsk.price)
         print (f"Profit from this close: {profitFromThis}")
         self.currentProfit += profitFromThis
         self.openAmount -= tradedAmount
@@ -121,17 +128,20 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         marketOrder = MarketOrder(symbol=ticker, orderId=self.orderId, sell=True, size=size)
         self.lob.applyMarketOrder(marketOrder)
 
+
+    def bestsPresent(self):
+        return self.krdmdBestBid is not None and\
+           self.krdmdBestAsk is not None and\
+           self.krdmaBestBid is not None and\
+           self.krdmaBestAsk is not None
+
     def checkPriceAndTrigger(self, event, eventTime):
         
-
-        if self.krdmdBestBid is None or\
-           self.krdmdBestAsk is None or\
-           self.krdmaBestBid is None or\
-           self.krdmaBestAsk is None:
+        if not self.bestsPresent():
            return
 
         # Update the min subtracted part only if it is between 10:15am-10:20am. After 10:20am, we start actual trading.
-        subtracatedPart = self.krdmdBestAsk - self.krdmaBestBid
+        subtracatedPart = self.krdmdBestAsk.price - self.krdmaBestBid.price
         if eventTime.time() < datetime.time(10,20,0):
             newSubtractedPart = min(self.minSubtractedPart, subtracatedPart)
             if newSubtractedPart != self.minSubtractedPart:
@@ -149,47 +159,52 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
             print ("Critical: minSubtractedPart is never set")
             exit(1)
 
-       
+
+        # It's time to unwind if we have any open positions
+        if eventTime.time() > self.parameters["algo_end_time"]:
+            while self.openAmount > 0 and self.bestsPresent():
+                self.closePosition()
+                print (f"ALGO END Closed position. Total profit: {self.currentProfit}")
+                print (f"ALGO END Current open positions in each of KRDMD and KRDMA: {self.openAmount}")
+            return
+
         #ORIGINAL FOERMULA FOR CURRENT DIFF:
         # self.krdmdBestBid - self.krdmaBestAsk + self.krdmaFirstBid - self.krdmdFirstAsk
-        currentDiff = self.krdmdBestBid - self.krdmaBestAsk - self.minSubtractedPart
+        currentDiff = self.krdmdBestBid.price - self.krdmaBestAsk.price - self.minSubtractedPart
         self.maxDiff = max(self.maxDiff, currentDiff)
         #TODO: Try different thrsholds for different pairs
         while currentDiff > 0.05 and self.openAmount < self.upperLimitOnOpenAmount:
             self.openPosition() #This call updates the bests
             print (f"Opened position with currentDiff: {currentDiff}")
-            currentDiff = self.krdmdBestBid - self.krdmaBestAsk - self.minSubtractedPart
+            currentDiff = self.krdmdBestBid.price - self.krdmaBestAsk.price - self.minSubtractedPart
             print (f"Current open positions in each of KRDMD and KRDMA: {self.openAmount}")
         
         while subtracatedPart <= self.minSubtractedPart and self.openAmount > 0:
             self.closePosition() #This call updates the bests
             print (f"Closed position. Total profit: {self.currentProfit}")
             print (f"Current open positions in each of KRDMD and KRDMA: {self.openAmount}")
-            subtracatedPart = self.krdmdBestAsk - self.krdmaBestBid
+            # Not expecting to run out of liquidity here. If we do, we will crash on the line
+            # below.
+            subtracatedPart = self.krdmdBestAsk.price - self.krdmaBestBid.price 
          
     def processKrdma(self, event, eventTime):
-        self.krdmaBestBid = self.lob.bestBid(event.symbol).price
-        self.krdmaBestAsk = self.lob.bestAsk(event.symbol).price
+        self.updateBests()
         self.checkPriceAndTrigger(event, eventTime)
         
     def processKrdmd(self, event, eventTime):
-        self.krdmdBestBid = self.lob.bestBid(event.symbol).price
-        self.krdmdBestAsk = self.lob.bestAsk(event.symbol).price
+        self.updateBests()
         self.checkPriceAndTrigger(event, eventTime)
         
     def profitFromUnwindingEverything(self):
+            
+        #Unwind KRDMA by shorting it
+        profitFromKrdma, krdmaRemainingToUnwind = self.lob.cumulativeValueAtBidNumShares("KRDMA.E", self.openAmount)
+
+        #Unwind KRDMD by longing it
+        profitFromKrdmd, krdmdRemainingToUnwind = self.lob.cumulativeValueAtAskNumShares("KRDMD.E", self.openAmount)
+        profitFromKrdmd = -profitFromKrdmd #Because we are longing KRDMD
         
-        try:
-            #Unwind KRDMA by shorting it
-            profitFromKrdma = self.log.cumulativeValueAtBidNumShares("KRDMA.E", self.openAmount)
-
-            #Unwind KRDMD by longing it
-            profitFromKrdmd = -self.log.cumulativeValueAtAskNumShares("KRDMD.E", self.openAmount)
-        except Exception:
-            print ("Cannot unwind everything due to lack of liquidity")
-            return 0
-
-        return profitFromKrdma + profitFromKrdmd
+        return profitFromKrdma + profitFromKrdmd, krdmaRemainingToUnwind, krdmdRemainingToUnwind
 
     def cumulativeValueAtAskNumShares(self, ticker, numShares):
         return self.limitOrderBooks[ticker].cumulativeValueAtNumShares(numShares, Side.ASK)
@@ -207,7 +222,14 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
             self.lob.dumpBook("KRDMD.E", 5)
             print (f"Current open position in each stock: {self.openAmount}")
             print (f"Current total profit: {self.currentProfit}")
-            print (f"Today's profit if unwinded everything now: {self.currentProfit + self.profitFromUnwindingEverything()}")
+            if self.openAmount > 0:
+                profitFromUnwinding, krdmaRemainingToUnwind, krdmdRemainingToUnwind  = self.profitFromUnwindingEverything()
+                if krdmaRemainingToUnwind == 0 and krdmdRemainingToUnwind == 0:
+                    print (f"Today's profit if unwinded everything now: {self.currentProfit + profitFromUnwinding}")
+                else:
+                    print (f"WARNING: Cannot unwind everything now. KRDMA remaining: {krdmaRemainingToUnwind}, KRDMD remaining: {krdmdRemainingToUnwind}")
+            subtracatedPart = self.krdmdBestAsk.price - self.krdmaBestBid.price
+            print (f"Subtracted part now: {subtracatedPart}")
             print ()
             print ()
             print ()
@@ -218,10 +240,11 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
             return
         
         if currentTime > self.parameters["exchange_close_time"]:
-            if self.openAmount > 0:
-                self.currentProfit += self.profitFromUnwindingEverything()
-                self.openAmount = 0
             return
+
+        if currentTime < self.parameters["algo_start_time"]:
+            return
+
 
         # if currentTime > datetime.time(10,15,0):
         #     raise Exception()
@@ -238,8 +261,8 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         
         # Only consider price if the spread is less than 10 kurus
         #TODO: We should really look at both spreads
-        if self.lob.spread(event.symbol) <= 0.10:
-            pass
+        # if self.lob.spread(event.symbol) <= 0.10:
+        #     pass
         
         if event.symbol == "KRDMA.E":
             self.processKrdma(event, eventTime)
