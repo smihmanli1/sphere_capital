@@ -207,6 +207,16 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
         
         return profitFromKrdma + profitFromKrdmd, krdmaRemainingToUnwind, krdmdRemainingToUnwind
 
+    def profitFromUnwindingAmountAtBestPrice(self, amount):
+        #Unwind KRDMA by shorting it
+        profitFromKrdma = self.krdmaBestBid.price * amount
+
+        #Unwind KRDMD by longing it
+        profitFromKrdmd = -self.krdmdBestAsk.price * amount
+
+        return profitFromKrdma + profitFromKrdmd
+
+
     def cumulativeValueAtAskNumShares(self, ticker, numShares):
         return self.limitOrderBooks[ticker].cumulativeValueAtNumShares(numShares, Side.ASK)
 
@@ -219,6 +229,8 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
             print (f"Today's profit if unwinded {percentage}% of everything now: {self.currentProfit + profitFromUnwinding}")
         else:
             print (f"WARNING: Cannot unwind {percentage}% of everything now. KRDMA remaining: {krdmaRemainingToUnwind}, KRDMD remaining: {krdmdRemainingToUnwind}")
+
+        print (f"Today's profit if unwinded {percentage}% of everything now at best price: {self.currentProfit + self.profitFromUnwindingAmountAtBestPrice(amount)}")
 
     def accept(self, event):
         
