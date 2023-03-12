@@ -228,8 +228,9 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
                     print (f"Today's profit if unwinded everything now: {self.currentProfit + profitFromUnwinding}")
                 else:
                     print (f"WARNING: Cannot unwind everything now. KRDMA remaining: {krdmaRemainingToUnwind}, KRDMD remaining: {krdmdRemainingToUnwind}")
-            subtracatedPart = self.krdmdBestAsk.price - self.krdmaBestBid.price
-            print (f"Subtracted part now: {subtracatedPart}")
+            if self.bestsPresent():
+                subtracatedPart = self.krdmdBestAsk.price - self.krdmaBestBid.price
+                print (f"Subtracted part now: {subtracatedPart}")
             print ()
             print ()
             print ()
