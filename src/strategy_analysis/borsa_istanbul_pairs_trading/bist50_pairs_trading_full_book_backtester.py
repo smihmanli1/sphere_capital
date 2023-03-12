@@ -62,9 +62,9 @@ parameters["sell_threshold"] = 0
 parameters["upper_limit_on_position"] = 100000
 
 if len(sys.argv) > 4:
-    parameters["buy_threshold"] = sys.argv[4]
-    parameters["sell_threshold"] = sys.argv[5]
-    parameters["upper_limit_on_position"] = sys.argv[6]
+    parameters["buy_threshold"] = float(sys.argv[4])
+    parameters["sell_threshold"] = float(sys.argv[5])
+    parameters["upper_limit_on_position"] = int(sys.argv[6])
 
 
 runDate = startDate
