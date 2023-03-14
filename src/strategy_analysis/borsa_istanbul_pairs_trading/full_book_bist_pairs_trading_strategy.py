@@ -141,14 +141,10 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
            self.krdmaBestBid is not None and\
            self.krdmaBestAsk is not None
 
-    def checkPriceAndTrigger(self, event, eventTime):
-        
-        if not self.bestsPresent():
-           return
-
+    
+    def updateAnchorSubtractedPart_median(self, subtracatedPart):
         # Note that if one of the below prices changed, subtraced part would have changed.
         # Also not that both can't change on the same checkPriceAndTrigger call
-        subtracatedPart = self.krdmdBestAsk.price - self.krdmaBestBid.price
         if subtracatedPart != self.prevSubtractedPart:
             self.prevSubtractedPart = subtracatedPart
             self.allSubtractedPartsSoFar.append(subtracatedPart)
@@ -157,6 +153,15 @@ class FullBookBistPairsTradingStrategy(TradingAlgo):
                 if self.anchorSubtractedPart != potentialNewAnchor:
                     print (f"Anchor subtracted part updated to: {potentialNewAnchor}")
                 self.anchorSubtractedPart = potentialNewAnchor
+
+
+    def checkPriceAndTrigger(self, event, eventTime):
+        
+        if not self.bestsPresent():
+           return
+
+        subtracatedPart = self.krdmdBestAsk.price - self.krdmaBestBid.price
+        self.updateAnchorSubtractedPart_median(subtracatedPart)
         
         if eventTime.time() < datetime.time(11,0,0):
             return
